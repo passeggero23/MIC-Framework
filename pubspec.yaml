@@ -9,10 +9,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  cupertino_icons: ^1.0.6 # Standard per le icone
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^3.0.0 # Fondamentale per tenere il codice pulito (il "Vigilante" lo ama)
 
 flutter:
   uses-material-design: true
