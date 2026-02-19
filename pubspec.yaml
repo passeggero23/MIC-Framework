@@ -9,12 +9,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6 # Standard per le icone
+  cupertino_icons: ^1.0.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0 # Fondamentale per tenere il codice pulito (il "Vigilante" lo ama)
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
+
+  # Abilitiamo la cartella per i modelli AI e le configurazioni
+  assets:
+    - assets/models/
