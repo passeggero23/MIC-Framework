@@ -1,81 +1,69 @@
 import 'package:flutter/material.dart';
-import 'dashboard_page.dart';
-import 'settings_page.dart';
+import '../core/mic_core.dart'; // Importiamo il motore che hai appena creato
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  // Istanziamo il Core
+  final MicCore _core = MicCore();
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _bootstrapFramework();
+  }
+
+  // Funzione per avviare il motore al lancio dell'app
+  Future<void> _bootstrapFramework() async {
+    await _core.boot();
+    setState(() {
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("MIC FRAMEWORK CORE"),
-        centerTitle: true,
-        elevation: 4,
+        title: const Text('MIC Framework Dashboard'),
+        actions: [
+          Icon(
+            _core.isSecure ? Icons.shield : Icons.shield_outlined,
+            color: _core.isSecure ? Colors.green : Colors.red,
+          ),
+          const SizedBox(width: 16),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: GridView.count(
-          crossAxisCount: 2, // Due colonne
-          crossAxisSpacing: 20,
-          mainAxisSpacing: 20,
-          children: [
-            _buildMenuCard(
-              context, 
-              "DASHBOARD", 
-              Icons.analytics_outlined, 
-              Colors.blue,
-              const DashboardPage()
+      body: Center(
+        child: _isLoading 
+          ? const CircularProgressIndicator() // Caricamento durante il boot
+          : Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  "Stato del Sistema:",
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _core.systemStatus,
+                  style: TextStyle(
+                    fontSize: 22, 
+                    fontWeight: FontWeight.bold,
+                    color: _core.isSecure ? Colors.blue : Colors.orange,
+                  ),
+                ),
+                const SizedBox(height: 40),
+                if (_core.isSecure)
+                  const Icon(Icons.check_circle, color: Colors.green, size: 60)
+              ],
             ),
-            _buildMenuCard(
-              context, 
-              "AI ENGINE", 
-              Icons.psychology_outlined, 
-              Colors.purple,
-              null // Modulo futuro
-            ),
-            _buildMenuCard(
-              context, 
-              "DATABASE", 
-              Icons.storage_rounded, 
-              Colors.amber,
-              null // Modulo futuro
-            ),
-            _buildMenuCard(
-              context, 
-              "SETTINGS", 
-              Icons.settings_suggest_outlined, 
-              Colors.grey,
-              const SettingsPage()
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMenuCard(BuildContext context, String title, IconData icon, Color color, Widget? destination) {
-    return InkWell(
-      onTap: () {
-        if (destination != null) {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => destination));
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("$title: Modulo in fase di sviluppo..."))
-          );
-        }
-      },
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        elevation: 5,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 45, color: color),
-            const SizedBox(height: 10),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-          ],
-        ),
       ),
     );
   }
