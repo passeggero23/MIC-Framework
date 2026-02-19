@@ -1,26 +1,29 @@
-/*
- * Copyright (c) 2026 Passeggero23
- * Licensed under the Apache License, Version 2.0
- */
+// Copyright (c) 2026 MIC-Framework.
+// Licensed under the MIT License.
+// Protected under MIC Ethical AI Policy (Privacy & Child Safety).
+
 import 'package:flutter/material.dart';
-import 'main_navigation.dart';
+import 'pages/home_page.dart';
 
 void main() {
-  runApp(const MICFrameworkApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const MicFramework());
 }
 
-class MICFrameworkApp extends StatelessWidget {
-  const MICFrameworkApp({super.key});
+class MicFramework extends StatelessWidget {
+  const MicFramework({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'MIC Framework',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
+        colorSchemeSeed: Colors.blue,
+        brightness: Brightness.dark,
       ),
-      home: const MainNavigation(),
+      home: const HomePage(),
     );
   }
 }
