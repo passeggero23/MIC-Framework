@@ -1,3 +1,8 @@
+/*
+ * Copyright 2026 MIC-Framework
+ * Licensed under the Apache License, Version 2.0
+ */
+
 import 'package:flutter/material.dart';
 import '../core/mic_core.dart';
 
@@ -14,10 +19,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _initFramework();
+    _init();
   }
 
-  Future<void> _initFramework() async {
+  Future<void> _init() async {
     await _core.boot();
     if (mounted) setState(() {});
   }
@@ -27,22 +32,20 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0E21),
       appBar: AppBar(
-        title: const Text('MIC FRAMEWORK CORE'),
-        centerTitle: true,
+        title: const Text('MIC CORE'), 
+        centerTitle: true, 
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildStatusCard(),
-            const SizedBox(height: 20),
-            const Text("MODULI ATTIVI", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
-            const Divider(color: Colors.white24),
-            const Expanded(child: Center(child: Text("Nessun modulo IA caricato", style: TextStyle(color: Colors.white24)))),
-          ],
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildStatusCard(),
+            ],
+          ),
         ),
       ),
     );
@@ -50,22 +53,40 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildStatusCard() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: const Color(0xFF1D1E33),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: _core.isReady ? Colors.blue.withOpacity(0.5) : Colors.red),
+        borderRadius: BorderRadius.circular(16),
+        // CORREZIONE RIGA 57: Usiamo withValues invece di withOpacity
+        border: Border.all(
+          color: _core.isReady 
+              ? Colors.blue.withValues(alpha: 0.5) 
+              : Colors.red.withValues(alpha: 0.5),
+        ),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(_core.isReady ? Icons.bolt : Icons.warning, color: _core.isReady ? Colors.blue : Colors.red, size: 40),
-          const SizedBox(width: 20),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(_core.isReady ? "SISTEMA ATTIVO" : "SISTEMA OFFLINE", style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-              Text(_core.systemStatus, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-            ],
+          Icon(
+            _core.isReady ? Icons.bolt_rounded : Icons.warning_rounded, 
+            color: _core.isReady ? Colors.blue : Colors.red, 
+            size: 64
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _core.isReady ? "SISTEMA ATTIVO" : "OFFLINE", 
+            style: const TextStyle(
+              color: Colors.white, 
+              fontSize: 22, 
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2
+            )
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _core.systemStatus, 
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white70, fontSize: 14)
           ),
         ],
       ),
