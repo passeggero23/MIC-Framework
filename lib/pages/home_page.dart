@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import '../core/mic_core.dart';
+import '../core/ai_engine.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,16 +16,40 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final MicCore _core = MicCore();
+  final AIEngine _ai = AIEngine();
+  bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
-    _init();
+    _initSystem();
   }
 
-  Future<void> _init() async {
+  Future<void> _initSystem() async {
     await _core.boot();
     if (mounted) setState(() {});
+  }
+
+  Future<void> _handleAIInitialization() async {
+    setState(() => _isProcessing = true);
+    
+    // Simula un breve delay di caricamento per il feedback utente
+    await Future.delayed(const Duration(milliseconds: 800));
+    final success = await _ai.initialize();
+    
+    if (mounted) {
+      setState(() => _isProcessing = false);
+      _showFeedback(success);
+    }
+  }
+
+  void _showFeedback(bool success) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success ? "Modulo AI Caricato" : "Errore: Modello non trovato"),
+        backgroundColor: success ? Colors.blueAccent : Colors.redAccent,
+      ),
+    );
   }
 
   @override
@@ -32,61 +57,72 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0E21),
       appBar: AppBar(
-        title: const Text('MIC CORE'), 
-        centerTitle: true, 
+        title: const Text('MIC CONTROL PANEL', style: TextStyle(letterSpacing: 1.5, fontSize: 16)),
+        centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildStatusCard(),
-            ],
-          ),
-        ),
+      body: Column(
+        children: [
+          const SizedBox(height: 40),
+          _buildStatusIndicator(),
+          const Spacer(),
+          _buildControlPanel(),
+          const SizedBox(height: 60),
+        ],
       ),
     );
   }
 
-  Widget _buildStatusCard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1D1E33),
-        borderRadius: BorderRadius.circular(16),
-        // CORREZIONE RIGA 57: Usiamo withValues invece di withOpacity
-        border: Border.all(
-          color: _core.isReady 
-              ? Colors.blue.withValues(alpha: 0.5) 
-              : Colors.red.withValues(alpha: 0.5),
-        ),
-      ),
+  Widget _buildStatusIndicator() {
+    return Center(
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            _core.isReady ? Icons.bolt_rounded : Icons.warning_rounded, 
-            color: _core.isReady ? Colors.blue : Colors.red, 
-            size: 64
+            _core.isReady ? Icons.security_rounded : Icons.shield_outlined,
+            color: _core.isReady ? Colors.blue : Colors.blueGrey,
+            size: 80,
           ),
           const SizedBox(height: 16),
           Text(
-            _core.isReady ? "SISTEMA ATTIVO" : "OFFLINE", 
-            style: const TextStyle(
-              color: Colors.white, 
-              fontSize: 22, 
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2
-            )
+            _core.systemStatus.toUpperCase(),
+            style: const TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 2),
           ),
-          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildControlPanel() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        children: [
+          const Divider(color: Colors.white10),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: _isProcessing ? null : _handleAIInitialization,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: _isProcessing
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text("INITIALIZE AI ENGINE", style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ),
+          const SizedBox(height: 16),
           Text(
-            _core.systemStatus, 
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white70, fontSize: 14)
+            "AI STATUS: ${_ai.isModelLoaded ? 'READY' : 'STANDBY'}",
+            style: TextStyle(
+              color: _ai.isModelLoaded ? Colors.greenAccent : Colors.white30,
+              fontSize: 11,
+              fontWeight: FontWeight.bold
+            ),
           ),
         ],
       ),
