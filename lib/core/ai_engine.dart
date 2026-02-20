@@ -3,29 +3,39 @@
  * Licensed under the Apache License, Version 2.0
  */
 
-import 'model_loader.dart';
 import 'dart:io';
+import 'model_loader.dart';
+import 'package:tflite_flutter/tflite_flutter.dart';
 
 class AIEngine {
   bool isModelLoaded = false;
-  String modelName = "mobilenet.tflite";
+  String currentModel = "placeholder.tflite";
+  Interpreter? _interpreter; 
 
   static final AIEngine _instance = AIEngine._internal();
   factory AIEngine() => _instance;
   AIEngine._internal();
 
-  /// Inizializza il modello AI estraendolo dagli assets
   Future<bool> initialize() async {
     try {
-      File modelFile = await ModelLoader.loadModel(modelName);
-      if (await modelFile.exists()) {
-        isModelLoaded = true;
-        return true;
-      }
-      return false;
+      // Estrazione asset
+      File modelFile = await ModelLoader.loadModel(currentModel);
+      
+      // Inizializzazione Interprete TFLite
+      _interpreter = Interpreter.fromFile(modelFile);
+      
+      isModelLoaded = _interpreter != null;
+      return isModelLoaded;
     } catch (e) {
+      // Log dell'errore per debugging in console
+      print("MIC ENGINE ERROR: $e");
       isModelLoaded = false;
       return false;
     }
+  }
+
+  void dispose() {
+    _interpreter?.close();
+    isModelLoaded = false;
   }
 }
