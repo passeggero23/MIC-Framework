@@ -8,18 +8,26 @@ import 'package:flutter/services.dart';
 class MicCore {
   static const MethodChannel _bridge = MethodChannel('com.mic.framework/core');
   
-  String systemStatus = "Standby";
-  bool isSecure = false;
+  // Stato del Framework
+  String systemStatus = "Inizializzazione...";
+  bool isReady = false;
+  bool secureBoot = false;
 
-  /// Inizializza il framework e verifica la connessione nativa
+  // Singleton pattern per avere un unico motore in tutta l'app
+  static final MicCore _instance = MicCore._internal();
+  factory MicCore() => _instance;
+  MicCore._internal();
+
+  /// Esegue il boot completo: Verifica Bridge -> Controllo Sicurezza -> Pronto
   Future<void> boot() async {
     try {
       final String result = await _bridge.invokeMethod('getCoreStatus');
-      systemStatus = result; // Risponderà "MIC Core Active - Secure Mode"
-      isSecure = true;
+      systemStatus = result;
+      secureBoot = true;
+      isReady = true;
     } catch (e) {
-      systemStatus = "Errore di boot: $e";
-      isSecure = false;
+      systemStatus = "Errore Critico: Bridge Non Trovato";
+      isReady = false;
     }
   }
 }
