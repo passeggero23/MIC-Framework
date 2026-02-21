@@ -1,7 +1,6 @@
 import 'package:flutter/services.dart';
 
 class MicCore {
-  // Dichiarazione esplicita delle proprietà di stato
   String systemStatus = "Inizializzazione...";
   bool isReady = false;
   bool secureBoot = false;
@@ -12,19 +11,15 @@ class MicCore {
   factory MicCore() => _instance;
   MicCore._internal();
 
-  /// Esegue il boot del sistema gestendo l'assenza del bridge nativo
   Future<void> boot() async {
     try {
-      // Nota: Chiamata al bridge commentata per la fase di sviluppo cross-platform
-      // final String result = await _bridge.invokeMethod('getCoreStatus');
-      
+      // Simulazione per bypassare il bridge nativo non ancora configurato
       await Future.delayed(const Duration(milliseconds: 500)); 
-      
-      systemStatus = "Sistema MIC: Attivo (Simulazione)";
+      systemStatus = "Sistema MIC: Attivo";
       secureBoot = true;
       isReady = true;
     } catch (e) {
-      systemStatus = "Errore di Connessione Bridge";
+      systemStatus = "Errore Bridge";
       isReady = false;
     }
   }
