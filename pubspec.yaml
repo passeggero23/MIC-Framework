@@ -1,7 +1,9 @@
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+
 dependencies:
   flutter:
     sdk: flutter
-  # I nuovi poteri del MIC-Framework:
-  tflite_flutter: ^0.10.4  # Per far girare il modello IA
-  camera: ^0.11.0         # Per vedere attraverso l'hardware
-  path_provider: ^2.1.1   # Per gestire i file del modello
+  tflite_flutter: ^0.10.4
+  camera: ^0.11.0
+  path_provider: ^2.1.1
