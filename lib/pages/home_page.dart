@@ -29,12 +29,14 @@ class _HomePageState extends State<HomePage> {
             Icon(
               Icons.shield,
               size: 80,
+              // Utilizzo di Colors con verifica dello stato
               color: _ai.isModelLoaded ? Colors.green : Colors.grey,
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _isProcessing ? null : _handleAI,
               style: ElevatedButton.styleFrom(
+                // Sintassi aggiornata per la gestione dell'opacità
                 backgroundColor: Colors.blue.withValues(alpha: 0.2),
               ),
               child: Text(_isProcessing ? "ELABORAZIONE..." : "ATTIVA MOTORE IA"),
