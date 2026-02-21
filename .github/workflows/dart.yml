@@ -1,13 +1,25 @@
-name: mic_framework
-description: "A new Flutter project."
-publish_to: 'none'
-version: 1.0.0+1
+name: Flutter CI
 
-# AGGIUNGI O MODIFICA QUESTA PARTE:
-environment:
-  sdk: '>=3.1.0 <4.0.0'
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
-dependencies:
-  flutter:
-    sdk: flutter
-  # ... le altre dipendenze che hai aggiunto ...
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze code
+        run: flutter analyze
