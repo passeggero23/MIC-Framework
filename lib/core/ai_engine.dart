@@ -1,19 +1,19 @@
 import 'package:camera/camera.dart';
 
 class AIEngine {
-  bool _isModelLoaded = false;
+  // Aggiungiamo questa variabile per la UI
+  bool isModelLoaded = false; 
 
-  Future<void> initializeModel() async {
-    // Inizializzazione simulata (sarà reale al PC)
-    _isModelLoaded = true;
-    print("MIC-Engine: Caricamento completato.");
+  // Rinominiamo il metodo per farlo combaciare con la chiamata della UI
+  Future<void> initialize() async {
+    // Simuliamo il caricamento
+    await Future.delayed(Duration(seconds: 1));
+    isModelLoaded = true;
+    print("MIC-Engine: Sistema pronto.");
   }
 
-  // La nuova funzione che hai chiesto
   String processCameraFrame(CameraImage image) {
-    if (!_isModelLoaded) return "Motore non pronto";
-    
-    // Logica di analisi (verrà completata al PC)
-    return "Analisi frame hardware in corso...";
+    if (!isModelLoaded) return "In attesa...";
+    return "Analisi frame attiva";
   }
 }
