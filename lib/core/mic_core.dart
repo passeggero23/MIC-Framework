@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 
 class MicCore {
+  // Proprietà di stato dichiarate correttamente all'interno della classe
   String systemStatus = "Inizializzazione...";
   bool isReady = false;
   bool secureBoot = false;
@@ -13,7 +14,7 @@ class MicCore {
 
   Future<void> boot() async {
     try {
-      // Simulazione per bypassare il bridge nativo non ancora configurato
+      // Simulazione del delay per bypassare il bridge nativo in questa fase
       await Future.delayed(const Duration(milliseconds: 500)); 
       systemStatus = "Sistema MIC: Attivo";
       secureBoot = true;
