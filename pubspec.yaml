@@ -1,23 +1,7 @@
-name: mic_framework
-description: "Framework modulare per suite decisionali."
-version: 1.0.0+1
-publish_to: 'none'
-
-environment:
-  sdk: '>=3.0.0 <4.0.0'
-
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6
-  tflite_flutter: ^0.10.4
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^3.0.0
-
-flutter:
-  uses-material-design: true
-  assets:
-    - assets/models/
+  # I nuovi poteri del MIC-Framework:
+  tflite_flutter: ^0.10.4  # Per far girare il modello IA
+  camera: ^0.11.0         # Per vedere attraverso l'hardware
+  path_provider: ^2.1.1   # Per gestire i file del modello
