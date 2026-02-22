@@ -4,14 +4,15 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.1.0 <4.0.0' # <--- QUESTO RISOLVE L'ERRORE #937
+  sdk: '>=3.1.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.6
-  tflite_v2: ^1.1.0
-  camera: ^0.10.5
+  # Corretto seguendo l'errore dello screenshot #938
+  tflite_v2: ^1.0.0 
+  camera: ^0.10.5+5
 
 dev_dependencies:
   flutter_test:
