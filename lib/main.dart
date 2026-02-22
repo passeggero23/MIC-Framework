@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'core/ai_engine.dart';          // Il cervello (Kimi/Qwen legacy)
-import 'core/vision_module.dart';      // L'occhio (MIC Scanner)
+import 'core/ai_engine.dart';
+import 'core/vision_module.dart';
 
 void main() => runApp(const MICAgentApp());
 
@@ -13,7 +13,6 @@ class MICAgentApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.black,
-        primaryColor: Colors.greenAccent,
       ),
       home: const MICDashboard(),
     );
@@ -37,7 +36,6 @@ class _MICDashboardState extends State<MICDashboard> {
     _engine.initialize();
   }
 
-  // Logica semaforica per la collaborazione uomo-macchina
   Color _getUIStatusColor() {
     if (_currentFeedback.contains("✅")) return Colors.greenAccent;
     if (_currentFeedback.contains("⚠️")) return Colors.orangeAccent;
@@ -49,40 +47,30 @@ class _MICDashboardState extends State<MICDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("MIC-FRAMEWORK AGENT", style: TextStyle(letterSpacing: 2)),
+        title: const Text("MIC-FRAMEWORK AGENT"),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: Column(
         children: [
-          // Flusso Video (Contributo Kimi/Qwen per la visione)
           const Expanded(flex: 4, child: MICScanner()),
           
-          // Pannello Decisionale Reattivo
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: _getUIStatusColor().withOpacity(0.1),
+              // CORREZIONE QUI: Usiamo un metodo più stabile per la trasparenza
+              color: _getUIStatusColor().withAlpha(25), 
               border: Border(top: BorderSide(color: _getUIStatusColor(), width: 2)),
             ),
-            child: Column(
-              children: [
-                Text(
-                  _currentFeedback,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _getUIStatusColor(),
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  "COLLABORAZIONE ATTIVA",
-                  style: TextStyle(color: Colors.white30, fontSize: 10),
-                ),
-              ],
+            child: Text(
+              _currentFeedback,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: _getUIStatusColor(),
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
