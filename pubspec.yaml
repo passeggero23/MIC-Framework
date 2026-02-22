@@ -1,17 +1,5 @@
-name: mic_framework
-description: "A new Flutter project."
-publish_to: 'none'
-version: 1.0.0+1
-
-environment:
-  sdk: '>=3.1.0 <4.0.0'
-
 dependencies:
   flutter:
     sdk: flutter
-  tflite_flutter: ^0.10.4
-  camera: ^0.11.0
-  path_provider: ^2.1.1
-
-flutter:
-  uses-material-design: true
+  cupertino_icons: ^1.0.6
+  tflite_v2: ^1.0.0  # <--- AGGIUNGI QUESTA RIGA
