@@ -1,50 +1,88 @@
-// ... (tieni gli import precedenti)
+import 'package:flutter/material.dart';
+import 'core/ai_engine.dart';          // Il cervello (Kimi/Qwen legacy)
+import 'core/vision_module.dart';      // L'occhio (MIC Scanner)
+
+void main() => runApp(const MICAgentApp());
+
+class MICAgentApp extends StatelessWidget {
+  const MICAgentApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: Colors.black,
+        primaryColor: Colors.greenAccent,
+      ),
+      home: const MICDashboard(),
+    );
+  }
+}
+
+class MICDashboard extends StatefulWidget {
+  const MICDashboard({super.key});
+
+  @override
+  State<MICDashboard> createState() => _MICDashboardState();
+}
 
 class _MICDashboardState extends State<MICDashboard> {
-  final AIEngine _aiEngine = AIEngine();
-  String _aiFeedback = "Inizializzazione...";
-  
-  // Funzione per determinare il colore in base al feedback dell'IA
-  Color _getFeedbackColor() {
-    if (_aiFeedback.contains("✅")) return Colors.greenAccent;
-    if (_aiFeedback.contains("⚠️")) return Colors.orangeAccent;
-    if (_aiFeedback.contains("❌")) return Colors.redAccent;
-    return Colors.white70;
+  final AIEngine _engine = AIEngine();
+  String _currentFeedback = "Inizializzazione Agente...";
+
+  @override
+  void initState() {
+    super.initState();
+    _engine.initialize();
+  }
+
+  // Logica semaforica per la collaborazione uomo-macchina
+  Color _getUIStatusColor() {
+    if (_currentFeedback.contains("✅")) return Colors.greenAccent;
+    if (_currentFeedback.contains("⚠️")) return Colors.orangeAccent;
+    if (_currentFeedback.contains("❌")) return Colors.redAccent;
+    return Colors.blueAccent;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(title: const Text("MIC AGENT INTERFACE")),
+      appBar: AppBar(
+        title: const Text("MIC-FRAMEWORK AGENT", style: TextStyle(letterSpacing: 2)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
       body: Column(
         children: [
-          const Expanded(flex: 3, child: MICScanner()), // L'occhio
+          // Flusso Video (Contributo Kimi/Qwen per la visione)
+          const Expanded(flex: 4, child: MICScanner()),
           
-          // LA PLANCIA REATTIVA
-          Expanded(
-            flex: 1,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: _getFeedbackColor().withOpacity(0.1),
-                border: Border(top: BorderSide(color: _getFeedbackColor(), width: 3)),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _aiFeedback,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: _getFeedbackColor(),
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+          // Pannello Decisionale Reattivo
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: _getUIStatusColor().withOpacity(0.1),
+              border: Border(top: BorderSide(color: _getUIStatusColor(), width: 2)),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  _currentFeedback,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: _getUIStatusColor(),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "COLLABORAZIONE ATTIVA",
+                  style: TextStyle(color: Colors.white30, fontSize: 10),
+                ),
+              ],
             ),
           ),
         ],
