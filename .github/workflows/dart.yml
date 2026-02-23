@@ -1,4 +1,4 @@
-concurrency: name: MIC-Framework Build APK
+name: MIC-Framework Build APK
 
 on:
   push:
@@ -17,7 +17,6 @@ jobs:
           channel: 'stable'
           flutter-version: '3.19.0'
 
-      # PASSO CHIAVE: Ricostruisce la struttura Android corretta
       - name: Repair and Reconstruct Android
         run: |
           rm -rf android/
