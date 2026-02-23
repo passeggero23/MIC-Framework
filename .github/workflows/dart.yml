@@ -1,9 +1,7 @@
-name: MIC-Framework Build APK
+concurrency: name: MIC-Framework Build APK
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
     branches: [ "main" ]
 
 jobs:
@@ -17,15 +15,23 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '3.16.0'
+          flutter-version: '3.19.0'
+
+      # PASSO CHIAVE: Ricostruisce la struttura Android corretta
+      - name: Repair and Reconstruct Android
+        run: |
+          rm -rf android/
+          flutter create . --platforms android --project-name mic_framework
 
       - name: Install dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get
+          flutter pub upgrade
 
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release --no-tree-shake-icons
 
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: mic-agent-release
