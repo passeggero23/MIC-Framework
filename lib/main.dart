@@ -4,92 +4,66 @@ import 'package:tflite_v2/tflite_v2.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final cameras = await availableCameras();
-  runApp(MaterialApp(home: MicAgent(cameras: cameras)));
+  runApp(const MaterialApp(home: MicAgent()));
 }
 
 class MicAgent extends StatefulWidget {
-  final List<CameraDescription> cameras;
-  MicAgent({required this.cameras});
-
+  const MicAgent({super.key});
   @override
   _MicAgentState createState() => _MicAgentState();
 }
 
 class _MicAgentState extends State<MicAgent> {
   CameraController? controller;
-  String label = "Inizializzazione...";
-  bool isBusy = false;
+  String status = "Inizializzazione...";
+  bool isReady = false;
 
   @override
   void initState() {
     super.initState();
-    initApp();
+    setup();
   }
 
-  Future<void> initApp() async {
+  Future<void> setup() async {
     try {
+      // 1. Carica Modello
       await Tflite.loadModel(
         model: "assets/model.tflite",
         labels: "assets/labels.txt",
       );
-      
-      controller = CameraController(widget.cameras[0], ResolutionPreset.medium);
+
+      // 2. Setup Fotocamera
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) throw Exception("Nessuna camera trovata");
+
+      controller = CameraController(cameras[0], ResolutionPreset.low, enableAudio: false);
       await controller!.initialize();
       
-      if (!mounted) return;
-      
-      controller!.startImageStream((image) {
-        if (!isBusy) {
-          isBusy = true;
-          runModel(image);
-        }
-      });
-      setState(() {});
-    } catch (e) {
-      setState(() => label = "Errore: $e");
-    }
-  }
-
-  runModel(CameraImage image) async {
-    var recognitions = await Tflite.runModelOnFrame(
-      bytesList: image.planes.map((p) => p.bytes).toList(),
-      imageHeight: image.height,
-      imageWidth: image.width,
-      numResults: 1,
-    );
-
-    if (recognitions != null && recognitions.isNotEmpty) {
       setState(() {
-        label = recognitions[0]['label'];
+        isReady = true;
+        status = "Pronto";
       });
+    } catch (e) {
+      setState(() => status = "Errore Fatale: $e");
     }
-    isBusy = false;
-  }
-
-  @override
-  void dispose() {
-    controller?.dispose();
-    Tflite.close();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (controller == null || !controller!.value.isInitialized) {
-      return Scaffold(body: Center(child: Text(label)));
+    if (!isReady) {
+      return Scaffold(body: Center(child: Text(status, textAlign: TextAlign.center)));
     }
     return Scaffold(
       body: Stack(
         children: [
           CameraPreview(controller!),
-          Positioned(
-            bottom: 30,
-            left: 20,
+          Align(
+            alignment: Alignment.bottomCenter,
             child: Container(
-              color: Colors.black54,
-              padding: EdgeInsets.all(10),
-              child: Text(label, style: TextStyle(color: Colors.white)),
+              margin: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(10),
+              color: Colors.black87,
+              child: Text(status, style: const TextStyle(color: Colors.white)),
             ),
           ),
         ],
