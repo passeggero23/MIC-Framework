@@ -1,75 +1,89 @@
 import 'package:flutter/material.dart';
-import 'core/ai_engine.dart';
-import 'core/vision_module.dart';
+import 'package:camera/camera.dart';
+import 'package:tflite_v2/tflite_v2.dart';
 
-void main() => runApp(const MICAgentApp());
-
-class MICAgentApp extends StatelessWidget {
-  const MICAgentApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: Colors.black,
-      ),
-      home: const MICDashboard(),
-    );
-  }
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final cameras = await availableCameras();
+  runApp(MaterialApp(home: MicAgent(cameras: cameras)));
 }
 
-class MICDashboard extends StatefulWidget {
-  const MICDashboard({super.key});
+class MicAgent extends StatefulWidget {
+  final List<CameraDescription> cameras;
+  MicAgent({required this.cameras});
 
   @override
-  State<MICDashboard> createState() => _MICDashboardState();
+  _MicAgentState createState() => _MicAgentState();
 }
 
-class _MICDashboardState extends State<MICDashboard> {
-  final AIEngine _engine = AIEngine();
-  String _currentFeedback = "Inizializzazione Agente...";
+class _MicAgentState extends State<MicAgent> {
+  CameraController? controller;
+  String label = "Inquadra qualcosa...";
+  double confidence = 0.0;
+  bool isBusy = false;
 
   @override
   void initState() {
     super.initState();
-    _engine.initialize();
+    loadModel();
+    initCamera();
   }
 
-  Color _getUIStatusColor() {
-    if (_currentFeedback.contains("✅")) return Colors.greenAccent;
-    if (_currentFeedback.contains("⚠️")) return Colors.orangeAccent;
-    if (_currentFeedback.contains("❌")) return Colors.redAccent;
-    return Colors.blueAccent;
+  loadModel() async {
+    await Tflite.loadModel(
+      model: "assets/model.tflite",
+      labels: "assets/labels.txt",
+    );
+  }
+
+  initCamera() {
+    controller = CameraController(widget.cameras[0], ResolutionPreset.medium);
+    controller!.initialize().then((_) {
+      if (!mounted) return;
+      controller!.startImageStream((image) {
+        if (!isBusy) {
+          isBusy = true;
+          runModelOnFrame(image);
+        }
+      });
+      setState(() {});
+    });
+  }
+
+  runModelOnFrame(CameraImage image) async {
+    var recognitions = await Tflite.runModelOnFrame(
+      bytesList: image.planes.map((plane) => plane.bytes).toList(),
+      imageHeight: image.height,
+      imageWidth: image.width,
+      numResults: 1,
+    );
+
+    if (recognitions != null && recognitions.isNotEmpty) {
+      setState(() {
+        label = recognitions[0]['label'];
+        confidence = recognitions[0]['confidence'] * 100;
+      });
+    }
+    isBusy = false;
   }
 
   @override
   Widget build(BuildContext context) {
+    if (controller == null || !controller!.value.isInitialized) {
+      return Container();
+    }
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("MIC-FRAMEWORK AGENT"),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: Column(
+      body: Stack(
         children: [
-          const Expanded(flex: 4, child: MICScanner()),
-          
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              // CORREZIONE QUI: Usiamo un metodo più stabile per la trasparenza
-              color: _getUIStatusColor().withAlpha(25), 
-              border: Border(top: BorderSide(color: _getUIStatusColor(), width: 2)),
-            ),
-            child: Text(
-              _currentFeedback,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _getUIStatusColor(),
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+          CameraPreview(controller!),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              color: Colors.black54,
+              padding: EdgeInsets.all(20),
+              child: Text(
+                "$label (${confidence.toStringAsFixed(0)}%)",
+                style: TextStyle(color: Colors.white, fontSize: 20),
               ),
             ),
           ),
