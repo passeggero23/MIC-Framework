@@ -1,9 +1,3 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application
-        android:label="mic_framework"
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
-        
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -22,9 +16,3 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        
-        <meta-data
-            android:name="flutterBundlePath"
-            android:value="assets/flutter_assets" />
-    </application>
-</manifest>
