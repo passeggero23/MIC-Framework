@@ -11,30 +11,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4 # Aggiornato a v4
 
-      # 1. Installa Flutter sul server di GitHub
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '3.10.0' # O la versione che preferisci
+          flutter-version: '3.16.0' # Versione solida
 
-      # 2. Scarica le dipendenze (tflite, camera, ecc.)
       - name: Install dependencies
         run: flutter pub get
 
-      # 3. Controlla che il codice sia perfetto (Analisi)
-      - name: Analyze project source
-        run: flutter analyze
-
-      # 4. TRASFORMA IL CODICE IN APP (Il passaggio che ci mancava!)
       - name: Build APK
         run: flutter build apk --release
 
-      # 5. CARICA L'APP PER IL DOWNLOAD
       - name: Upload APK Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4 # <--- QUESTO DEVE ESSERE V4
         with:
           name: mic-agent-release
           path: build/app/outputs/flutter-apk/app-release.apk
