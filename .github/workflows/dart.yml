@@ -21,8 +21,14 @@ jobs:
         run: |
           rm -rf android/
           flutter create . --platforms android --project-name mic_framework
-          # Questo comando inserisce il numero 21 dove serve per la fotocamera
           sed -i 's/minSdkVersion .*/minSdkVersion 21/' android/app/build.gradle
+
+      - name: Download Professional AI Assets
+        run: |
+          mkdir -p assets
+          # Scarichiamo il modello MobileNet (il cervello) e le etichette (il vocabolario)
+          curl -L "https://github.com/google-coral/test_data/raw/master/mobilenet_v2_1.0_224_inat_bird_quant.tflite" -o assets/model.tflite
+          curl -L "https://github.com/google-coral/test_data/raw/master/inat_bird_labels.txt" -o assets/labels.txt
 
       - name: Install dependencies
         run: |
