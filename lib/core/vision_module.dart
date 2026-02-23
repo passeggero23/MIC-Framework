@@ -10,7 +10,7 @@ class MICScanner extends StatefulWidget {
 
 class _MICScannerState extends State<MICScanner> {
   CameraController? _controller;
-  bool _isInitialized = false;
+  List<CameraDescription>? _cameras;
 
   @override
   void initState() {
@@ -19,25 +19,36 @@ class _MICScannerState extends State<MICScanner> {
   }
 
   Future<void> _setupCamera() async {
-    final cameras = await availableCameras();
-    if (cameras.isEmpty) return;
+    _cameras = await availableCameras();
+    if (_cameras != null && _cameras!.isNotEmpty) {
+      _controller = CameraController(
+        _cameras![0], 
+        ResolutionPreset.medium, // Bilanciamento perfetto tra velocità e dettaglio
+        enableAudio: false,
+      );
 
-    _controller = CameraController(cameras[0], ResolutionPreset.medium);
-    await _controller!.initialize();
-    
-    if (!mounted) return;
-    setState(() => _isInitialized = true);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_isInitialized) return const Center(child: CircularProgressIndicator());
-    return CameraPreview(_controller!); // Qui usiamo sia Camera che Material!
+      _controller?.initialize().then((_) {
+        if (!mounted) return;
+        setState(() {});
+        // Qui l'occhio inizia a inviare frame al motore
+        _controller?.startImageStream((CameraImage image) {
+          // Socio, qui è dove il C++ inizierà a macinare i dati
+        });
+      });
+    }
   }
 
   @override
   void dispose() {
     _controller?.dispose();
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_controller == null || !_controller!.value.isInitialized) {
+      return const Center(child: CircularProgressIndicator(color: Colors.blueAccent));
+    }
+    return CameraPreview(_controller!);
   }
 }
