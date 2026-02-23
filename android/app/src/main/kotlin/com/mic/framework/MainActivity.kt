@@ -1,18 +1,32 @@
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation"
-            android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
-            
-            <meta-data
-                android:name="flutterEmbedding"
-                android:value="2" />
+name: MIC-Framework Build APK
 
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.19.0'
+
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          flutter pub upgrade
+
+      - name: Build APK
+        run: flutter build apk --release --no-tree-shake-icons
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mic-agent-release
+          path: build/app/outputs/flutter-apk/app-release.apk
