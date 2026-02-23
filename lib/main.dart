@@ -5,24 +5,20 @@ import 'package:tflite_v2/tflite_v2.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final cameras = await availableCameras();
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: MicAgent(cameras: cameras),
-  ));
+  runApp(MaterialApp(home: MicAgent(cameras: cameras)));
 }
 
 class MicAgent extends StatefulWidget {
   final List<CameraDescription> cameras;
   const MicAgent({super.key, required this.cameras});
-
   @override
   State<MicAgent> createState() => _MicAgentState();
 }
 
 class _MicAgentState extends State<MicAgent> {
   CameraController? controller;
-  String status = "Pronto";
-  bool isReady = false;
+  String label = "Inquadra e premi";
+  bool isBusy = false;
 
   @override
   void initState() {
@@ -30,48 +26,51 @@ class _MicAgentState extends State<MicAgent> {
     initApp();
   }
 
-  Future<void> initApp() async {
+  initApp() async {
     try {
       await Tflite.loadModel(
         model: "assets/model.tflite",
         labels: "assets/labels.txt",
       );
-      
       controller = CameraController(widget.cameras[0], ResolutionPreset.low);
       await controller!.initialize();
-      if (mounted) setState(() => isReady = true);
+      if (mounted) setState(() {});
     } catch (e) {
-      setState(() => status = "Errore: $e");
+      setState(() => label = "Errore setup: $e");
     }
   }
 
-  Future<void> analizza() async {
-    if (controller == null || !controller!.value.isInitialized) return;
-    setState(() => status = "Analisi...");
+  void analizza() async {
+    if (controller == null || isBusy) return;
+    setState(() => label = "Analisi...");
+
     try {
       final image = await controller!.takePicture();
-      var predictions = await Tflite.runModelOnImage(path: image.path, numResults: 1);
+      
+      var predictions = await Tflite.runModelOnImage(
+        path: image.path,
+        numResults: 1,
+        imageMean: 127.5,
+        imageStd: 127.5,
+      );
+
       setState(() {
-        status = (predictions != null && predictions.isNotEmpty) 
-          ? "Vedo: ${predictions[0]['label']}" 
-          : "Nulla di noto";
+        if (predictions != null && predictions.isNotEmpty) {
+          label = predictions[0]['label'];
+        } else {
+          label = "Oggetto non riconosciuto";
+        }
       });
     } catch (e) {
-      setState(() => status = "Errore analisi");
+      setState(() => label = "Errore tecnico");
     }
-  }
-
-  @override
-  void dispose() {
-    controller?.dispose();
-    Tflite.close();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!isReady) return Scaffold(body: Center(child: Text(status)));
-
+    if (controller == null || !controller!.value.isInitialized) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     return Scaffold(
       body: Stack(
         children: [
@@ -79,20 +78,15 @@ class _MicAgentState extends State<MicAgent> {
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              margin: const EdgeInsets.only(bottom: 40),
+              margin: const EdgeInsets.only(bottom: 50),
+              padding: const EdgeInsets.all(15),
+              color: Colors.black87,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    color: Colors.black87,
-                    child: Text(status, style: const TextStyle(color: Colors.white)),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: analizza,
-                    child: const Text("COSA VEDI?"),
-                  ),
+                  Text(label, style: const TextStyle(color: Colors.white, fontSize: 18)),
+                  const SizedBox(height: 15),
+                  ElevatedButton(onPressed: analizza, child: const Text("ANALIZZA ORA")),
                 ],
               ),
             ),
