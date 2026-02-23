@@ -18,41 +18,42 @@ class MicAgent extends StatefulWidget {
 
 class _MicAgentState extends State<MicAgent> {
   CameraController? controller;
-  String label = "Inquadra qualcosa...";
-  double confidence = 0.0;
+  String label = "Inizializzazione...";
   bool isBusy = false;
 
   @override
   void initState() {
     super.initState();
-    loadModel();
-    initCamera();
+    initApp();
   }
 
-  loadModel() async {
-    await Tflite.loadModel(
-      model: "assets/model.tflite",
-      labels: "assets/labels.txt",
-    );
-  }
-
-  initCamera() {
-    controller = CameraController(widget.cameras[0], ResolutionPreset.medium);
-    controller!.initialize().then((_) {
+  Future<void> initApp() async {
+    try {
+      await Tflite.loadModel(
+        model: "assets/model.tflite",
+        labels: "assets/labels.txt",
+      );
+      
+      controller = CameraController(widget.cameras[0], ResolutionPreset.medium);
+      await controller!.initialize();
+      
       if (!mounted) return;
+      
       controller!.startImageStream((image) {
         if (!isBusy) {
           isBusy = true;
-          runModelOnFrame(image);
+          runModel(image);
         }
       });
       setState(() {});
-    });
+    } catch (e) {
+      setState(() => label = "Errore: $e");
+    }
   }
 
-  runModelOnFrame(CameraImage image) async {
+  runModel(CameraImage image) async {
     var recognitions = await Tflite.runModelOnFrame(
-      bytesList: image.planes.map((plane) => plane.bytes).toList(),
+      bytesList: image.planes.map((p) => p.bytes).toList(),
       imageHeight: image.height,
       imageWidth: image.width,
       numResults: 1,
@@ -61,30 +62,34 @@ class _MicAgentState extends State<MicAgent> {
     if (recognitions != null && recognitions.isNotEmpty) {
       setState(() {
         label = recognitions[0]['label'];
-        confidence = recognitions[0]['confidence'] * 100;
       });
     }
     isBusy = false;
   }
 
   @override
+  void dispose() {
+    controller?.dispose();
+    Tflite.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (controller == null || !controller!.value.isInitialized) {
-      return Container();
+      return Scaffold(body: Center(child: Text(label)));
     }
     return Scaffold(
       body: Stack(
         children: [
           CameraPreview(controller!),
-          Align(
-            alignment: Alignment.bottomCenter,
+          Positioned(
+            bottom: 30,
+            left: 20,
             child: Container(
               color: Colors.black54,
-              padding: EdgeInsets.all(20),
-              child: Text(
-                "$label (${confidence.toStringAsFixed(0)}%)",
-                style: TextStyle(color: Colors.white, fontSize: 20),
-              ),
+              padding: EdgeInsets.all(10),
+              child: Text(label, style: TextStyle(color: Colors.white)),
             ),
           ),
         ],
