@@ -1,49 +1,25 @@
-name: MIC-Framework Build APK
+name: mic_framework
+description: "MIC-FRAMEWORK AGENT"
+publish_to: 'none'
+version: 1.0.0+1
 
-on:
-  push:
-    branches: [ "main" ]
+environment:
+  sdk: '>=3.3.0 <4.0.0'
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  tflite_v2: ^1.0.0
+  camera: ^0.10.5+5
 
-    steps:
-      - uses: actions/checkout@v4
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          flutter-version: '3.19.0'
-
-      - name: Prepare Android Folder
-        run: |
-          # Ripariamo la cartella Android senza rompere il pubspec.yaml
-          flutter create . --platforms android --project-name mic_framework || true
-          # Forziamo il minSdkVersion a 21 per la fotocamera
-          if [ -f android/app/build.gradle ]; then
-            sed -i 's/minSdkVersion .*/minSdkVersion 21/' android/app/build.gradle
-          fi
-
-      - name: Download Professional AI Assets
-        run: |
-          mkdir -p assets
-          curl -L "https://github.com/google-coral/test_data/raw/master/mobilenet_v2_1.0_224_inat_bird_quant.tflite" -o assets/model.tflite
-          curl -L "https://github.com/google-coral/test_data/raw/master/inat_bird_labels.txt" -o assets/labels.txt
-
-      - name: Install dependencies
-        run: |
-          # Usiamo pub get ignorando i vincoli troppo stretti
-          flutter pub get
-
-      - name: Build APK
-        run: |
-          # Costruiamo l'APK saltando i controlli di versione che ci bloccano
-          flutter build apk --release --no-tree-shake-icons --no-pub
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: mic-agent-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/model.tflite
+    - assets/labels.txt
