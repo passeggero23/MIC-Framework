@@ -5,20 +5,25 @@ import 'package:tflite_v2/tflite_v2.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final cameras = await availableCameras();
-  runApp(MaterialApp(home: MicAgent(cameras: cameras)));
+  runApp(MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: MicAgent(cameras: cameras),
+  ));
 }
 
 class MicAgent extends StatefulWidget {
   final List<CameraDescription> cameras;
   const MicAgent({super.key, required this.cameras});
+
   @override
   State<MicAgent> createState() => _MicAgentState();
 }
 
 class _MicAgentState extends State<MicAgent> {
   CameraController? controller;
-  String label = "Inquadra e premi";
+  String status = "Sistema Pronto";
   bool isBusy = false;
+  bool isModelLoaded = false;
 
   @override
   void initState() {
@@ -26,23 +31,33 @@ class _MicAgentState extends State<MicAgent> {
     initApp();
   }
 
-  initApp() async {
+  Future<void> initApp() async {
     try {
       await Tflite.loadModel(
         model: "assets/model.tflite",
         labels: "assets/labels.txt",
       );
-      controller = CameraController(widget.cameras[0], ResolutionPreset.low);
+      isModelLoaded = true;
+      
+      controller = CameraController(
+        widget.cameras[0], 
+        ResolutionPreset.low,
+        enableAudio: false,
+      );
       await controller!.initialize();
       if (mounted) setState(() {});
     } catch (e) {
-      setState(() => label = "Errore setup: $e");
+      setState(() => status = "Errore Iniziale");
     }
   }
 
-  void analizza() async {
-    if (controller == null || isBusy) return;
-    setState(() => label = "Analisi...");
+  Future<void> analizza() async {
+    if (controller == null || !controller!.value.isInitialized || isBusy || !isModelLoaded) return;
+
+    setState(() {
+      isBusy = true;
+      status = "Analisi in corso...";
+    });
 
     try {
       final image = await controller!.takePicture();
@@ -50,20 +65,30 @@ class _MicAgentState extends State<MicAgent> {
       var predictions = await Tflite.runModelOnImage(
         path: image.path,
         numResults: 1,
+        threshold: 0.1,
         imageMean: 127.5,
         imageStd: 127.5,
       );
 
       setState(() {
         if (predictions != null && predictions.isNotEmpty) {
-          label = predictions[0]['label'];
+          status = "Vedo: ${predictions[0]['label']}";
         } else {
-          label = "Oggetto non riconosciuto";
+          status = "Nessun riscontro";
         }
       });
     } catch (e) {
-      setState(() => label = "Errore tecnico");
+      setState(() => status = "Riprova tra un attimo");
+    } finally {
+      isBusy = false;
     }
+  }
+
+  @override
+  void dispose() {
+    controller?.dispose();
+    Tflite.close();
+    super.dispose();
   }
 
   @override
@@ -71,22 +96,41 @@ class _MicAgentState extends State<MicAgent> {
     if (controller == null || !controller!.value.isInitialized) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
     return Scaffold(
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
-          CameraPreview(controller!),
+          Center(child: CameraPreview(controller!)),
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              margin: const EdgeInsets.only(bottom: 50),
-              padding: const EdgeInsets.all(15),
-              color: Colors.black87,
+              padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(label, style: const TextStyle(color: Colors.white, fontSize: 18)),
-                  const SizedBox(height: 15),
-                  ElevatedButton(onPressed: analizza, child: const Text("ANALIZZA ORA")),
+                  Text(
+                    status, 
+                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 60,
+                    child: ElevatedButton(
+                      onPressed: isBusy ? null : analizza,
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+                      child: Text(
+                        isBusy ? "ELABORAZIONE..." : "COSA VEDI?",
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
