@@ -1,4 +1,4 @@
-name: Dart CI & Build APK
+name: MIC-Framework Build APK
 
 on:
   push:
@@ -11,13 +11,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4 # Aggiornato a v4
+      - uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '3.16.0' # Versione solida
+          flutter-version: '3.16.0'
 
       - name: Install dependencies
         run: flutter pub get
@@ -26,7 +26,7 @@ jobs:
         run: flutter build apk --release
 
       - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4 # <--- QUESTO DEVE ESSERE V4
+        uses: actions/upload-artifact@v4
         with:
           name: mic-agent-release
           path: build/app/outputs/flutter-apk/app-release.apk
