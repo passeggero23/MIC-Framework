@@ -1,26 +1,7 @@
-name: mic_framework
-description: "MIC-FRAMEWORK AGENT"
-publish_to: 'none'
-version: 1.0.0+1
-
-environment:
-  sdk: '>=3.1.0 <4.0.0'
-
-dependencies:
-  flutter:
-    sdk: flutter
-  cupertino_icons: ^1.0.6
-  # Corretto seguendo l'errore dello screenshot #938
-  tflite_v2: ^1.0.0 
-  camera: ^0.10.5+5
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^3.0.0
-
 flutter:
   uses-material-design: true
-  assets:
-    - assets/models/mic_agent_core.tflite
-    - assets/models/labels.txt
+
+# Commenta queste tre righe così:
+#  assets:
+#    - assets/models/mic_agent_core.tflite
+#    - assets/models/labels.txt
