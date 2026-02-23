@@ -1,4 +1,4 @@
-concurrency: name: MIC-Framework Build APK
+name: MIC-Framework Build APK
 
 on:
   push:
@@ -21,7 +21,7 @@ jobs:
         run: |
           rm -rf android/
           flutter create . --platforms android --project-name mic_framework
-          # Questa riga corregge l'errore dello screenshot #977
+          # Questo comando inserisce il numero 21 dove serve per la fotocamera
           sed -i 's/minSdkVersion .*/minSdkVersion 21/' android/app/build.gradle
 
       - name: Install dependencies
