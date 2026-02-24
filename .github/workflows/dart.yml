@@ -26,9 +26,9 @@ jobs:
       - name: Config
         run: |
           flutter create . --platforms android --project-name mic_framework || true
-          # Forza minSdkVersion a 21 per la camera
+          # Risoluzione Errore #087: alza SDK a 21
           sed -i 's/minSdkVersion .*/minSdkVersion 21/' android/app/build.gradle
-          # Aggiunge i filtri processore per evitare crash
+          # Risoluzione Errore #042: aggiunge filtri per processore
           sed -i '/defaultConfig {/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }' android/app/build.gradle
 
       - name: Build
