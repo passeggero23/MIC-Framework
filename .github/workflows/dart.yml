@@ -1,6 +1,38 @@
-      - name: Download Ultra-Light Model
+name: MIC-Framework Build APK
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.19.0'
+
+      - name: Get Assets
         run: |
           mkdir -p assets
-          # Modello MobileNet V1: il più stabile per dispositivi mobili
           curl -L "https://raw.githubusercontent.com/google/mediapipe/master/mediapipe/modules/object_detection/testdata/ssdlite_object_detection_labelmap.txt" -o assets/labels.txt
           curl -L "https://github.com/google/mediapipe/raw/master/mediapipe/modules/object_detection/testdata/ssdlite_object_detection.tflite" -o assets/model.tflite
+
+      - name: Config Android
+        run: |
+          flutter create . --platforms android --project-name mic_framework || true
+          sed -i '/defaultConfig {/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }' android/app/build.gradle
+
+      - name: Build
+        run: flutter build apk --release --no-tree-shake-icons
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: mic-agent-release
+          path: build/app/outputs/flutter-apk/app-release.apk
