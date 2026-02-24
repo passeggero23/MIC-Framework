@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+Risolti errori Undefined (img #031), import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:tflite_v2/tflite_v2.dart';
 
@@ -17,16 +17,16 @@ class MicAgent extends StatefulWidget {
 
 class _MicAgentState extends State<MicAgent> {
   CameraController? controller;
-  String label = "Sistema Pronto";
+  String status = "Sistema Pronto";
   bool isBusy = false;
 
   @override
   void initState() {
     super.initState();
-    setup();
+    initApp();
   }
 
-  Future<void> setup() async {
+  Future<void> initApp() async {
     await Tflite.loadModel(model: "assets/model.tflite", labels: "assets/labels.txt");
     controller = CameraController(widget.cameras[0], ResolutionPreset.low, enableAudio: false);
     await controller!.initialize();
@@ -35,34 +35,18 @@ class _MicAgentState extends State<MicAgent> {
 
   Future<void> analizza() async {
     if (controller == null || isBusy) return;
-    setState(() { isBusy = true; label = "Analisi..."; });
-
+    setState(() { isBusy = true; status = "Analisi..."; });
     try {
       final img = await controller!.takePicture();
-      
-      // Analisi con parametri di memoria ridotti
-      var result = await Tflite.runModelOnImage(
-        path: img.path,
-        numResults: 1,
-        threshold: 0.1,
-        asynch: true // Esegue in background per non bloccare l'app
-      );
-
+      var res = await Tflite.runModelOnImage(path: img.path, numResults: 1);
       setState(() {
-        label = (result != null && result.isNotEmpty) ? result[0]['label'] : "Oggetto non chiaro";
+        status = (res != null && res.isNotEmpty) ? "Vedo: ${res[0]['label']}" : "Non riconosco";
       });
     } catch (e) {
-      setState(() => label = "Riprova");
+      setState(() => status = "Errore");
     } finally {
       isBusy = false;
     }
-  }
-
-  @override
-  void dispose() {
-    Tflite.close();
-    controller?.dispose();
-    super.dispose();
   }
 
   @override
@@ -71,7 +55,6 @@ class _MicAgentState extends State<MicAgent> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
-      backgroundColor: Colors.black,
       body: Stack(
         children: [
           CameraPreview(controller!),
@@ -83,9 +66,9 @@ class _MicAgentState extends State<MicAgent> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(label, style: const TextStyle(color: Colors.white, fontSize: 18)),
+                  Text(status, style: const TextStyle(color: Colors.white, fontSize: 18)),
                   const SizedBox(height: 10),
-                  ElevatedButton(onPressed: isBusy ? null : analizza, child: const Text("ANALIZZA")),
+                  ElevatedButton(onPressed: isBusy ? null : analizza, child: const Text("COSA VEDI?")),
                 ],
               ),
             ),
@@ -95,3 +78,4 @@ class _MicAgentState extends State<MicAgent> {
     );
   }
 }
+ sintassi YAML (img #105) e aggiornato SDK a 21 per supporto camera (img #087).
