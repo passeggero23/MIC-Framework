@@ -14,7 +14,6 @@ void main() async {
 class MicAgent extends StatefulWidget {
   final List<CameraDescription> cameras;
   const MicAgent({super.key, required this.cameras});
-
   @override
   State<MicAgent> createState() => _MicAgentState();
 }
@@ -32,27 +31,58 @@ class _MicAgentState extends State<MicAgent> {
 
   Future<void> initApp() async {
     try {
-      await Tflite.loadModel(
-        model: "assets/model.tflite",
-        labels: "assets/labels.txt",
-      );
+      await Tflite.loadModel(model: "assets/model.tflite", labels: "assets/labels.txt");
       controller = CameraController(widget.cameras[0], ResolutionPreset.low, enableAudio: false);
       await controller!.initialize();
       if (mounted) setState(() {});
     } catch (e) {
-      setState(() => status = "Errore Iniziale");
+      setState(() => status = "Errore Init");
     }
   }
 
   Future<void> analizza() async {
     if (controller == null || isBusy) return;
     setState(() { isBusy = true; status = "Analisi..."; });
-
     try {
       final img = await controller!.takePicture();
-      var res = await Tflite.runModelOnImage(
-        path: img.path,
-        numResults: 1,
-        threshold: 0.1,
-        imageMean: 127.5,
-        imageStd:
+      var res = await Tflite.runModelOnImage(path: img.path, numResults: 1);
+      setState(() {
+        status = (res != null && res.isNotEmpty) ? "Vedo: ${res[0]['label']}" : "Non riconosco";
+      });
+    } catch (e) {
+      setState(() => status = "Errore");
+    } finally {
+      isBusy = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller == null || !controller!.value.isInitialized) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          CameraPreview(controller!),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              padding: const EdgeInsets.all(25),
+              color: Colors.black54,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(status, style: const TextStyle(color: Colors.white, fontSize: 18)),
+                  const SizedBox(height: 15),
+                  ElevatedButton(onPressed: isBusy ? null : analizza, child: const Text("COSA VEDI?")),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
