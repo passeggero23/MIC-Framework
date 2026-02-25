@@ -1,4 +1,4 @@
-Risolti errori Undefined (img #031), import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:tflite_v2/tflite_v2.dart';
 
@@ -27,10 +27,14 @@ class _MicAgentState extends State<MicAgent> {
   }
 
   Future<void> initApp() async {
-    await Tflite.loadModel(model: "assets/model.tflite", labels: "assets/labels.txt");
-    controller = CameraController(widget.cameras[0], ResolutionPreset.low, enableAudio: false);
-    await controller!.initialize();
-    if (mounted) setState(() {});
+    try {
+      await Tflite.loadModel(model: "assets/model.tflite", labels: "assets/labels.txt");
+      controller = CameraController(widget.cameras[0], ResolutionPreset.low, enableAudio: false);
+      await controller!.initialize();
+      if (mounted) setState(() {});
+    } catch (e) {
+      setState(() => status = "Errore Init");
+    }
   }
 
   Future<void> analizza() async {
@@ -43,7 +47,7 @@ class _MicAgentState extends State<MicAgent> {
         status = (res != null && res.isNotEmpty) ? "Vedo: ${res[0]['label']}" : "Non riconosco";
       });
     } catch (e) {
-      setState(() => status = "Errore");
+      setState(() => status = "Errore Analisi");
     } finally {
       isBusy = false;
     }
@@ -78,4 +82,3 @@ class _MicAgentState extends State<MicAgent> {
     );
   }
 }
- sintassi YAML (img #105) e aggiornato SDK a 21 per supporto camera (img #087).
