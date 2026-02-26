@@ -1,4 +1,4 @@
- name: Build
+name: Build
 on:
   push:
     branches: [ main ]
@@ -16,7 +16,7 @@ jobs:
 
       - name: Prep
         run: |
-          # Usiamo solo minuscole e underscore per evitare l'errore degli screenshot
+          # Creiamo il progetto con un nome valido (minuscolo e senza trattini)
           flutter create --platforms android --project-name mic_app .
           mkdir -p assets
           curl -L "https://raw.githubusercontent.com/google/mediapipe/master/mediapipe/modules/object_detection/testdata/ssdlite_object_detection_labelmap.txt" -o assets/labels.txt
