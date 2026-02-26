@@ -16,11 +16,18 @@ jobs:
 
       - name: Prep
         run: |
-          # Creiamo il progetto con un nome valido (minuscolo e senza trattini)
+          # PULIZIA TOTALE: Eliminiamo le cartelle che causano conflitti
+          rm -rf android ios web linux macos windows .dart_tool
+          
+          # CREAZIONE PROGETTO: Creiamo una struttura pulita e valida
           flutter create --platforms android --project-name mic_app .
+          
+          # ASSETS: Prepariamo i modelli IA
           mkdir -p assets
           curl -L "https://raw.githubusercontent.com/google/mediapipe/master/mediapipe/modules/object_detection/testdata/ssdlite_object_detection_labelmap.txt" -o assets/labels.txt
           curl -L "https://github.com/google/mediapipe/raw/master/mediapipe/modules/object_detection/testdata/ssdlite_object_detection.tflite" -o assets/model.tflite
+          
+          # FIX ANDROID: Configurazione SDK e NDK
           sed -i 's/minSdkVersion .*/minSdkVersion 21/' android/app/build.gradle
           sed -i '/defaultConfig {/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }' android/app/build.gradle
 
