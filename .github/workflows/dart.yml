@@ -14,20 +14,38 @@ jobs:
           channel: stable
           flutter-version: 3.19.0
 
-      - name: Prep & Fix Permissions
+      - name: Prep & Deep Fix
         run: |
-          rm -rf android
+          # 1. Reset totale della struttura
+          rm -rf android pubspec.yaml
           flutter create --platforms android --project-name mic_app .
           
-          # DOWNLOAD MODELLI IA
+          # 2. Download dei modelli IA (Assets)
           mkdir -p assets
           curl -L "https://raw.githubusercontent.com/google/mediapipe/master/mediapipe/modules/object_detection/testdata/ssdlite_object_detection_labelmap.txt" -o assets/labels.txt
           curl -L "https://github.com/google/mediapipe/raw/master/mediapipe/modules/object_detection/testdata/ssdlite_object_detection.tflite" -o assets/model.tflite
           
-          # AGGIUNTA PERMESSI FOTOCAMERA (Fondamentale!)
+          # 3. Creazione forzata del file pubspec.yaml (La "mappa" dell'app)
+          cat <<EOF > pubspec.yaml
+          name: mic_app
+          environment:
+            sdk: '>=3.0.0 <4.0.0'
+          dependencies:
+            flutter:
+              sdk: flutter
+            camera: any
+            tflite_v2: any
+          flutter:
+            uses-material-design: true
+            assets:
+              - assets/labels.txt
+              - assets/model.tflite
+          EOF
+
+          # 4. Iniezione Permessi Fotocamera
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" /> \n    <uses-feature android:name="android.hardware.camera" />' android/app/src/main/AndroidManifest.xml
           
-          # CONFIGURAZIONE SDK E NDK
+          # 5. Configurazione SDK/NDK per compatibilità
           sed -i 's/minSdkVersion .*/minSdkVersion 21/' android/app/build.gradle
           sed -i '/defaultConfig {/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }' android/app/build.gradle
 
