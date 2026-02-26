@@ -36,7 +36,7 @@ class _MicAgentState extends State<MicAgent> {
       await controller!.initialize();
       if (mounted) setState(() {});
     } catch (e) {
-      setState(() => status = "Errore Init");
+      setState(() => status = "Errore Camera");
     }
   }
 
@@ -47,10 +47,10 @@ class _MicAgentState extends State<MicAgent> {
       final img = await controller!.takePicture();
       var res = await Tflite.runModelOnImage(path: img.path, numResults: 1);
       setState(() {
-        status = (res != null && res.isNotEmpty) ? "Vedo: ${res[0]['label']}" : "Non riconosco";
+        status = (res != null && res.isNotEmpty) ? "Vedo: ${res[0]['label']}" : "Riprova";
       });
     } catch (e) {
-      setState(() => status = "Errore");
+      setState(() => status = "Errore Analisi");
     } finally {
       isBusy = false;
     }
