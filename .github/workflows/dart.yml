@@ -17,8 +17,7 @@ jobs:
           rm -rf android pubspec.yaml
           flutter create --platforms android --project-name mic_app .
           mkdir -p assets
-          curl -L "https://raw.githubusercontent.com/google/mediapipe/master/mediapipe/modules/object_detection/testdata/ssdlite_object_detection_labelmap.txt" -o assets/labels.txt
-          curl -L "https://github.com/google/mediapipe/raw/master/mediapipe/modules/object_detection/testdata/ssdlite_object_detection.tflite" -o assets/model.tflite
+          # Assicurati di aver caricato i file nella cartella assets su GitHub
           cat <<EOF > pubspec.yaml
           name: mic_app
           environment:
@@ -34,11 +33,17 @@ jobs:
               - assets/labels.txt
               - assets/model.tflite
           EOF
+          # Soluzione 1: Evita compressione tflite
+          sed -i '/android {/a \    packagingOptions {\n        resources {\n            noCompress += ["tflite"]\n        }\n    }' android/app/build.gradle
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" /> \n    <uses-feature android:name="android.hardware.camera" />' android/app/src/main/AndroidManifest.xml
           sed -i 's/minSdkVersion .*/minSdkVersion 21/' android/app/build.gradle
           sed -i '/defaultConfig {/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }' android/app/build.gradle
       - name: Build APK
-        run: flutter build apk --release --no-tree-shake-icons
+        run: |
+          # Soluzione 3: Pulizia prima del build
+          flutter clean
+          flutter pub get
+          flutter build apk --release --no-tree-shake-icons
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
