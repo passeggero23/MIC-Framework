@@ -1,3 +1,25 @@
+Skip to content
+passeggero23
+MIC-Framework
+Repository navigation
+Code
+Issues
+Pull requests
+1
+ (1)
+Agents
+Actions
+Projects
+Wiki
+Security
+Insights
+Settings
+.github/workflows/dart.yml
+Update dart.yml #146
+All jobs
+Run details
+Workflow file for this run
+.github/workflows/dart.yml at b28de6e
 name: Build
 on:
   push:
@@ -20,14 +42,21 @@ jobs:
         run: |
           rm -rf android pubspec.yaml
           flutter create --platforms android --project-name mic_app .
-
           # --- FIX PACKAGINGOPTIONS ---
           cat > /tmp/agp_fix.txt <<'RESOURCECFG'
-  packagingOptions {
-    resources {
-      noCompress += [".tflite"]
-    }
+packagingOptions {
+ Check failure on line 26 in .github/workflows/dart.yml
+
+
+GitHub Actions
+/ .github/workflows/dart.yml
+Invalid workflow file
+
+You have an error in your yaml syntax on line 26
+  resources {
+    noCompress += [".tflite"]
   }
+}
 RESOURCECFG
           sed -i '/^android {$/r/tmp/agp_fix.txt' android/app/build.gradle
 
@@ -57,10 +86,22 @@ PUBSPEC
 
           # --- PERMISSIONS ---
           cat > /tmp/manifest_add.txt <<'PERM_EOF'
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-feature android:name="android.hardware.camera" />
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-feature android:name="android.hardware.camera" />
 PERM_EOF
           sed -i '/<application/ir /tmp/manifest_add.txt' android/app/src/main/AndroidManifest.xml
 
       - name: Build AppBundle
         run: flutter build appbundle --release
+Footer
+© 2026 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+Manage cookies
+Do not share my personal information
