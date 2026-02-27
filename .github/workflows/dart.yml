@@ -30,7 +30,6 @@ jobs:
   }
 RESOURCECFG
           sed -i '/^android {$/r/tmp/agp_fix.txt' android/app/build.gradle
-          # ---------------------------
 
           # --- DEPENDENCIES ---
           mkdir -p assets
@@ -51,12 +50,10 @@ flutter:
     - assets/labels.txt
     - assets/model.tflite
 PUBSPEC
-          # ------------------
 
           # --- FIX SDK / NDK ---
           sed -i 's/minSdk[[:space:]]*=.*/minSdk = 21/' android/app/build.gradle
           sed -i '/^[[:space:]]*defaultConfig[[:space:]]*{/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }' android/app/build.gradle
-          # ---------------------
 
           # --- PERMISSIONS ---
           cat > /tmp/manifest_add.txt <<'PERM_EOF'
@@ -64,7 +61,6 @@ PUBSPEC
     <uses-feature android:name="android.hardware.camera" />
 PERM_EOF
           sed -i '/<application/ir /tmp/manifest_add.txt' android/app/src/main/AndroidManifest.xml
-          # -------------------
 
       - name: Build AppBundle
         run: flutter build appbundle --release
