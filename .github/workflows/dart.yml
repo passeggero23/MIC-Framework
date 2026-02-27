@@ -7,23 +7,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: 3.19.0
+          
       - name: Prep & Deep Fix
         run: |
           rm -rf android pubspec.yaml
           flutter create --platforms android --project-name mic_app .
           
-          # --- CORREZIONE QUI ---
-          # Iniettiamo il blocco noCompress nella sintassi corretta per AGP 7.0+
-          sed -i '/android {/a \    packagingOptions {\n        resources {\n            noCompress += [".tflite"]\n        }\n    }' android/app/build.gradle
-          # ----------------------
+          # --- FIX BUILD.GRADLE ---
+          # 1. Fix minSdk per Flutter 3.19+ (usa 'minSdk =' non 'minSdkVersion')
+          sed -i 's/minSdk[[:space:]]*=.*/minSdk = 21/' android/app/build.gradle
           
+          # 2. packagingOptions con sintassi AGP 7.0/8.0 (resources {})
+          # Inserito prima di defaultConfig per non rompere 'namespace'
+          sed -i '/^[[:space:]]*defaultConfig[[:space:]]*{/i \
+    packagingOptions {\
+        resources {\
+            noCompress += [".tflite"]\
+        }\
+    }\
+' android/app/build.gradle
+          
+          # 3. NDK abiFilters (dopo defaultConfig)
+          sed -i '/^[[:space:]]*defaultConfig[[:space:]]*{/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }' android/app/build.gradle
+          # ------------------------
+          
+          # --- CREAZIONE PUBSPEC ---
           mkdir -p assets
-          # N.B. Assicurati di aver caricato i file .tflite e .txt nella cartella assets su GitHub
           cat <<EOF > pubspec.yaml
           name: mic_app
           environment:
@@ -39,14 +54,24 @@ jobs:
               - assets/labels.txt
               - assets/model.tflite
           EOF
+          # ------------------------
+          
+          # --- FIX MANIFEST ---
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" /> \n    <uses-feature android:name="android.hardware.camera" />' android/app/src/main/AndroidManifest.xml
-          sed -i 's/minSdkVersion .*/minSdkVersion 21/' android/app/build.gradle
-          sed -i '/defaultConfig {/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }' android/app/build.gradle
+          # --------------------
+          
+      - name: Check Assets
+        run: |
+          if [ ! -f "assets/model.tflite" ]; then echo "ERRORE: assets/model.tflite mancante!"; exit 1; fi
+          if [ ! -f "assets/labels.txt" ]; then echo "ERRORE: assets/labels.txt mancante!"; exit 1; fi
+          echo "Asset check OK"
+          
       - name: Build APK
         run: |
           flutter clean
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
+          
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
