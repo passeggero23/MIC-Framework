@@ -18,8 +18,7 @@ jobs:
           rm -rf android pubspec.yaml
           flutter create --platforms android --project-name mic_app .
           
-          # --- FIX PACKAGINGOPTIONS CORRETTO ---
-          # Crea un blocco android { packagingOptions { resources { ... }} con indentazione corretta
+          # --- FIX PACKAGINGOPTIONS ---
           cat > /tmp/agp_fix.txt <<'RESOURCECFG'
   packagingOptions {
     resources {
@@ -28,12 +27,11 @@ jobs:
   }
 RESOURCECFG
 
-          # Inserisce dopo il blocco android (ma prima di namespace/assemble) per AGP 8.x
+          # Inserisci dopo "android {" agp 8.x style
           sed -i '/^android {$/r /tmp/agp_fix.txt' android/app/build.gradle
-          # -------------------------------
+          # ---------------------------
           
           # --- DEPENDENCIES ---
-          # Crea un pubspec.yaml compatibile
           mkdir -p assets
           cat > pubspec.yaml <<'PUBSPEC'
 name: mic_app
@@ -52,18 +50,18 @@ flutter:
 PUBSPEC
           # ------------------
           
-          # --- MIN SDK & NDK ---
+          # --- FIX SDK / NDK ---
           sed -i 's/minSdk[[:space:]]*=.*/minSdk = 21/' android/app/build.gradle
           sed -i '/^[[:space:]]*defaultConfig[[:space:]]*{/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }' android/app/build.gradle
-          # ---------------------
+          # --------------------
           
-          # --- CAMERA PERMISSIONS ---
+          # --- PERMISSIONS ---
           cat > /tmp/manifest_add.txt <<'PERM_EOF'
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" />
 PERM_EOF
           sed -i '/<application/ir /tmp/manifest_add.txt' android/app/src/main/AndroidManifest.xml
-          # --------------------------
+          # -------------------
 
       - name: Build APK
         run: |
