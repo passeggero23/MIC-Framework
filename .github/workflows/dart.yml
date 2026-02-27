@@ -23,11 +23,11 @@ jobs:
 
           # --- FIX PACKAGINGOPTIONS ---
           cat > /tmp/agp_fix.txt <<'RESOURCECFG'
-  packagingOptions {
-    resources {
-      noCompress += [".tflite"]
-    }
+packagingOptions {
+  resources {
+    noCompress += [".tflite"]
   }
+}
 RESOURCECFG
           sed -i '/^android {$/r/tmp/agp_fix.txt' android/app/build.gradle
 
@@ -57,8 +57,8 @@ PUBSPEC
 
           # --- PERMISSIONS ---
           cat > /tmp/manifest_add.txt <<'PERM_EOF'
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-feature android:name="android.hardware.camera" />
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-feature android:name="android.hardware.camera" />
 PERM_EOF
           sed -i '/<application/ir /tmp/manifest_add.txt' android/app/src/main/AndroidManifest.xml
 
