@@ -1,107 +1,79 @@
-Skip to content
-passeggero23
-MIC-Framework
-Repository navigation
-Code
-Issues
-Pull requests
-1
- (1)
-Agents
-Actions
-Projects
-Wiki
-Security
-Insights
-Settings
-.github/workflows/dart.yml
-Update dart.yml #146
-All jobs
-Run details
-Workflow file for this run
-.github/workflows/dart.yml at b28de6e
 name: Build
 on:
   push:
     branches: [ main ]
-
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: 3.19.0
-
+          
       - name: Prep & Deep Fix
         run: |
           rm -rf android pubspec.yaml
           flutter create --platforms android --project-name mic_app .
-          # --- FIX PACKAGINGOPTIONS ---
-          cat > /tmp/agp_fix.txt <<'RESOURCECFG'
-packagingOptions {
- Check failure on line 26 in .github/workflows/dart.yml
-
-
-GitHub Actions
-/ .github/workflows/dart.yml
-Invalid workflow file
-
-You have an error in your yaml syntax on line 26
-  resources {
-    noCompress += [".tflite"]
-  }
-}
-RESOURCECFG
-          sed -i '/^android {$/r/tmp/agp_fix.txt' android/app/build.gradle
-
-          # --- DEPENDENCIES ---
-          mkdir -p assets
-          cat > pubspec.yaml <<'PUBSPEC'
-name: mic_app
-environment:
-  sdk: '>=3.0.0 <4.0.0'
-
-dependencies:
-  flutter:
-    sdk: flutter
-  camera: ^0.11.0
-  tflite_v2: ^1.0.0
-
-flutter:
-  uses-material-design: true
-  assets:
-    - assets/labels.txt
-    - assets/model.tflite
-PUBSPEC
-
-          # --- FIX SDK / NDK ---
+          
+          # --- FIX BUILD.GRADLE ---
+          # 1. Fix minSdk per Flutter 3.19+ (usa 'minSdk =' non 'minSdkVersion')
           sed -i 's/minSdk[[:space:]]*=.*/minSdk = 21/' android/app/build.gradle
+          
+          # 2. packagingOptions con sintassi AGP 7.0/8.0 (resources {})
+          # Inserito prima di defaultConfig per non rompere 'namespace'
+          sed -i '/^[[:space:]]*defaultConfig[[:space:]]*{/i \
+    packagingOptions {\
+        resources {\
+            noCompress += [".tflite"]\
+        }\
+    }\
+' android/app/build.gradle
+          
+          # 3. NDK abiFilters (dopo defaultConfig)
           sed -i '/^[[:space:]]*defaultConfig[[:space:]]*{/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }' android/app/build.gradle
-
-          # --- PERMISSIONS ---
-          cat > /tmp/manifest_add.txt <<'PERM_EOF'
-<uses-permission android:name="android.permission.CAMERA" />
-<uses-feature android:name="android.hardware.camera" />
-PERM_EOF
-          sed -i '/<application/ir /tmp/manifest_add.txt' android/app/src/main/AndroidManifest.xml
-
-      - name: Build AppBundle
-        run: flutter build appbundle --release
-Footer
-© 2026 GitHub, Inc.
-Footer navigation
-Terms
-Privacy
-Security
-Status
-Community
-Docs
-Contact
-Manage cookies
-Do not share my personal information
+          # ------------------------
+          
+          # --- CREAZIONE PUBSPEC ---
+          mkdir -p assets
+          cat <<EOF > pubspec.yaml
+          name: mic_app
+          environment:
+            sdk: '>=3.0.0 <4.0.0'
+          dependencies:
+            flutter:
+              sdk: flutter
+            camera: any
+            tflite_v2: any
+          flutter:
+            uses-material-design: true
+            assets:
+              - assets/labels.txt
+              - assets/model.tflite
+          EOF
+          # ------------------------
+          
+          # --- FIX MANIFEST ---
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" /> \n    <uses-feature android:name="android.hardware.camera" />' android/app/src/main/AndroidManifest.xml
+          # --------------------
+          
+      - name: Check Assets
+        run: |
+          if [ ! -f "assets/model.tflite" ]; then echo "ERRORE: assets/model.tflite mancante!"; exit 1; fi
+          if [ ! -f "assets/labels.txt" ]; then echo "ERRORE: assets/labels.txt mancante!"; exit 1; fi
+          echo "Asset check OK"
+          
+      - name: Build APK
+        run: |
+          flutter clean
+          flutter pub get
+          flutter build apk --release --no-tree-shake-icons
+          
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
