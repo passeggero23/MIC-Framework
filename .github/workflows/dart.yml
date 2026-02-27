@@ -7,59 +7,64 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: 3.19.0
-          
+
       - name: Prep & Deep Fix
         run: |
           rm -rf android pubspec.yaml
           flutter create --platforms android --project-name mic_app .
           
-          # --- FIX BUILD.GRADLE ---
-          # Crea il blocco packagingOptions da inserire
-          echo "    packagingOptions {" > /tmp/packaging.txt
-          echo "        resources {" >> /tmp/packaging.txt
-          echo "            noCompress += [\".tflite\"]" >> /tmp/packaging.txt
-          echo "        }" >> /tmp/packaging.txt
-          echo "    }" >> /tmp/packaging.txt
+          # --- FIX PACKAGINGOPTIONS CORRETTO ---
+          # Crea un blocco android { packagingOptions { resources { ... }} con indentazione corretta
+          cat > /tmp/agp_fix.txt <<'RESOURCECFG'
+  packagingOptions {
+    resources {
+      noCompress += [".tflite"]
+    }
+  }
+RESOURCECFG
+
+          # Inserisce dopo il blocco android (ma prima di namespace/assemble) per AGP 8.x
+          sed -i '/^android {$/r /tmp/agp_fix.txt' android/app/build.gradle
+          # -------------------------------
           
-          # Inserisci dopo 'android {' e prima di 'namespace'/'compileOptions'
-          sed -i '/^android {/r /tmp/packaging.txt' android/app/build.gradle
-          
-          # Fix minSdk (Flutter 3.19 usa 'minSdk =')
-          sed -i 's/minSdk[[:space:]]*=.*/minSdk = 21/' android/app/build.gradle
-          
-          # Fix NDK
-          sed -i '/defaultConfig {/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }' android/app/build.gradle
-          # ------------------------
-          
-          # --- PUBSPEC ---
+          # --- DEPENDENCIES ---
+          # Crea un pubspec.yaml compatibile
           mkdir -p assets
-          cat > pubspec.yaml << 'EOF'
-          name: mic_app
-          environment:
-            sdk: '>=3.0.0 <4.0.0'
-          dependencies:
-            flutter:
-              sdk: flutter
-            camera: any
-            tflite_v2: any
-          flutter:
-            uses-material-design: true
-            assets:
-              - assets/labels.txt
-              - assets/model.tflite
-          EOF
-          # ---------------
+          cat > pubspec.yaml <<'PUBSPEC'
+name: mic_app
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  camera: ^0.11.0
+  tflite_v2: ^1.0.0
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/labels.txt
+    - assets/model.tflite
+PUBSPEC
+          # ------------------
           
-          # --- MANIFEST ---
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" />' android/app/src/main/AndroidManifest.xml
-          # ----------------
+          # --- MIN SDK & NDK ---
+          sed -i 's/minSdk[[:space:]]*=.*/minSdk = 21/' android/app/build.gradle
+          sed -i '/^[[:space:]]*defaultConfig[[:space:]]*{/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }' android/app/build.gradle
+          # ---------------------
           
+          # --- CAMERA PERMISSIONS ---
+          cat > /tmp/manifest_add.txt <<'PERM_EOF'
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" />
+PERM_EOF
+          sed -i '/<application/ir /tmp/manifest_add.txt' android/app/src/main/AndroidManifest.xml
+          # --------------------------
+
       - name: Build APK
         run: |
           flutter clean
