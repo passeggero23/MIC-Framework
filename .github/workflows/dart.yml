@@ -19,27 +19,27 @@ jobs:
           rm -rf android pubspec.yaml
           flutter create --platforms android --project-name mic_app .
           
-          # Crea un file temporaneo con il contenuto corretto
-          cat > /tmp/packaging_fix.txt << 'PACKAGEEOF'
-              packagingOptions {
-                  resources {
-                      noCompress += [".tflite"]
-                  }
-              }
-          PACKAGEEOF
+          # --- FIX BUILD.GRADLE ---
+          # Crea il blocco packagingOptions da inserire
+          echo "    packagingOptions {" > /tmp/packaging.txt
+          echo "        resources {" >> /tmp/packaging.txt
+          echo "            noCompress += [\".tflite\"]" >> /tmp/packaging.txt
+          echo "        }" >> /tmp/packaging.txt
+          echo "    }" >> /tmp/packaging.txt
           
-          # Inserisci il blocco prima di defaultConfig
-          sed -i '/defaultConfig {/e cat /tmp/packaging_fix.txt' android/app/build.gradle
+          # Inserisci dopo 'android {' e prima di 'namespace'/'compileOptions'
+          sed -i '/^android {/r /tmp/packaging.txt' android/app/build.gradle
           
-          # Fix minSdk
+          # Fix minSdk (Flutter 3.19 usa 'minSdk =')
           sed -i 's/minSdk[[:space:]]*=.*/minSdk = 21/' android/app/build.gradle
           
           # Fix NDK
           sed -i '/defaultConfig {/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }' android/app/build.gradle
+          # ------------------------
           
-          # Pubspec
+          # --- PUBSPEC ---
           mkdir -p assets
-          cat << 'EOF' > pubspec.yaml
+          cat > pubspec.yaml << 'EOF'
           name: mic_app
           environment:
             sdk: '>=3.0.0 <4.0.0'
@@ -54,9 +54,11 @@ jobs:
               - assets/labels.txt
               - assets/model.tflite
           EOF
+          # ---------------
           
-          # Manifest
+          # --- MANIFEST ---
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" />' android/app/src/main/AndroidManifest.xml
+          # ----------------
           
       - name: Build APK
         run: |
