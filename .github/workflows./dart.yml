@@ -1,4 +1,3 @@
-```yaml
 name: Build
 on:
   push:
@@ -13,17 +12,8 @@ jobs:
         with:
           channel: stable
           flutter-version: 3.19.0
-      - name: Fix and Build
-        run: |
-          rm -rf android
-          flutter create --platforms android --project-name mic_app .
-          sed -i 's/minSdkVersion 16/minSdkVersion 21/' android/app/build.gradle
-          mkdir -p assets
-          touch assets/labels.txt
-          touch assets/model.tflite
       - name: Build APK
         run: |
-          flutter clean
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
       - name: Upload
@@ -31,4 +21,3 @@ jobs:
         with:
           name: app-release
           path: build/app/outputs/flutter-apk/app-release.apk
-```
