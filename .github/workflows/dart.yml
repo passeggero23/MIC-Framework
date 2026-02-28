@@ -1,3 +1,4 @@
+```yaml
 name: Build
 on:
   push:
@@ -18,33 +19,24 @@ jobs:
         run: |
           rm -rf android pubspec.yaml
           flutter create --platforms android --project-name mic_app .
-
-          # --- FIX BUILD.GRADLE ---
-          # 1. Fix minSdk per Flutter 3.19+ (usa 'minSdk =' non 'minSdkVersion')
           sed -i 's/minSdk[[:space:]]*=.*/minSdk = 21/' android/app/build.gradle
-
-          # 2. Inserisci packagingOptions con sintassi AGP 7.0/8.0 (resources {})
           sed -i '/^[[:space:]]*android {$/,/^[[:space:]]*defaultConfig/a \
     packagingOptions {\
         resources {\
             noCompress += [".tflite"]\
         }\
     }' android/app/build.gradle
-
-          # 3. Aggiungi NDK abiFilters (dopo defaultConfig)
           sed -i '/^[[:space:]]*defaultConfig[[:space:]]*{/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }' android/app/build.gradle
-          # ------------------------
-          
-          # --- CREAZIONE PUBSPEC ---
           mkdir -p assets
           cat <<EOF > pubspec.yaml
 name: mic_app
 environment:
   sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.19.0'
 
 dependencies:
   flutter:
-    version: '>=3.0.0 <4.0.0'
+    sdk: flutter
   camera: ^0.11.0
   tflite_v2: ^1.0.0
 
@@ -54,11 +46,7 @@ flutter:
     - assets/labels.txt
     - assets/model.tflite
 EOF
-          # ------------------------
-          
-          # --- FIX MANIFEST ---
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" />' android/app/src/main/AndroidManifest.xml
-          # --------------------
 
       - name: Check Assets
         run: |
@@ -77,3 +65,4 @@ EOF
         with:
           name: app-release
           path: build/app/outputs/flutter-apk/app-release.apk
+```
