@@ -7,30 +7,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: 3.19.0
-          
+
       - name: Prep & Deep Fix
         run: |
           rm -rf android pubspec.yaml
           flutter create --platforms android --project-name mic_app .
-          
+
           # --- FIX BUILD.GRADLE ---
           # 1. Fix minSdk per Flutter 3.19+ (usa 'minSdk =' non 'minSdkVersion')
           sed -i 's/minSdk[[:space:]]*=.*/minSdk = 21/' android/app/build.gradle
-          
+
           # 2. Inserisci packagingOptions con sintassi AGP 7.0/8.0 (resources {})
-          sed -i '/^[[:space:]]*android {$/,/^[[:space:]]*defaultConfig/a\
+          sed -i '/^[[:space:]]*android {$/,/^[[:space:]]*defaultConfig/a \
     packagingOptions {\
         resources {\
             noCompress += [".tflite"]\
         }\
     }' android/app/build.gradle
-          
+
           # 3. Aggiungi NDK abiFilters (dopo defaultConfig)
           sed -i '/^[[:space:]]*defaultConfig[[:space:]]*{/a \        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }' android/app/build.gradle
           # ------------------------
@@ -44,7 +44,7 @@ environment:
 
 dependencies:
   flutter:
-    sdk: flutter
+    version: '>=3.0.0 <4.0.0'
   camera: ^0.11.0
   tflite_v2: ^1.0.0
 
@@ -59,19 +59,19 @@ EOF
           # --- FIX MANIFEST ---
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" />' android/app/src/main/AndroidManifest.xml
           # --------------------
-          
+
       - name: Check Assets
         run: |
           if [ ! -f "assets/model.tflite" ]; then echo "ERRORE: assets/model.tflite mancante!"; exit 1; fi
           if [ ! -f "assets/labels.txt" ]; then echo "ERRORE: assets/labels.txt mancante!"; exit 1; fi
           echo "Asset check OK"
-          
+
       - name: Build APK
         run: |
           flutter clean
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
-          
+
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
