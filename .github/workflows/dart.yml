@@ -15,56 +15,31 @@ jobs:
           channel: stable
           flutter-version: 3.19.0
 
-      - name: Write pubspec
-        run: |
-          printf '%s\n' \
-            'name: mic_app' \
-            'environment:' \
-            '  sdk: ">=3.0.0 <4.0.0"' \
-            '  flutter: ">=3.19.0"' \
-            'dependencies:' \
-            '  flutter:' \
-            '    sdk: flutter' \
-            '  camera: ^0.11.0' \
-            '  tflite_v2: ^1.0.0' \
-            'flutter:' \
-            '  uses-material-design: true' \
-            '  assets:' \
-            '    - assets/labels.txt' \
-            '    - assets/model.tflite' \
-            > pubspec.yaml
-
       - name: Prep & Deep Fix
         run: |
           rm -rf android
           flutter create --platforms android --project-name mic_app .
 
-          python3 - << 'PYEOF'
+          python3 -c "
 import re
 
 with open('android/app/build.gradle', 'r') as f:
-    content = f.read()
-
-content = re.sub(r'minSdk\s*=\s*\S+', 'minSdk = 21', content)
-
-packaging = '\n    packagingOptions {\n        resources {\n            noCompress += [".tflite"]\n        }\n    }'
-content = re.sub(r'(android\s*\{)', r'\1' + packaging, content, count=1)
-
-ndk = '\n        ndk { abiFilters "armeabi-v7a", "arm64-v8a" }'
-content = re.sub(r'(defaultConfig\s*\{)', r'\1' + ndk, content, count=1)
-
+    c = f.read()
+c = re.sub(r'minSdk\s*=\s*\S+', 'minSdk = 21', c)
+c = re.sub(r'(android\s*\{)', r'\1\n    packagingOptions {\n        resources {\n            noCompress += [\".tflite\"]\n        }\n    }', c, count=1)
+c = re.sub(r'(defaultConfig\s*\{)', r'\1\n        ndk { abiFilters \"armeabi-v7a\", \"arm64-v8a\" }', c, count=1)
 with open('android/app/build.gradle', 'w') as f:
-    f.write(content)
+    f.write(c)
 
 with open('android/app/src/main/AndroidManifest.xml', 'r') as f:
-    content = f.read()
-
-permissions = '    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" />\n'
-content = content.replace('<application', permissions + '    <application', 1)
-
+    m = f.read()
+m = m.replace('<application', '    <uses-permission android:name=\"android.permission.CAMERA\" />\n    <uses-feature android:name=\"android.hardware.camera\" />\n    <application', 1)
 with open('android/app/src/main/AndroidManifest.xml', 'w') as f:
-    f.write(content)
-PYEOF
+    f.write(m)
+"
+
+          mkdir -p assets
+          printf 'name: mic_app\nenvironment:\n  sdk: ">=3.0.0 <4.0.0"\n  flutter: ">=3.19.0"\ndependencies:\n  flutter:\n    sdk: flutter\n  camera: ^0.11.0\n  tflite_v2: ^1.0.0\nflutter:\n  uses-material-design: true\n  assets:\n    - assets/labels.txt\n    - assets/model.tflite\n' > pubspec.yaml
 
       - name: Check Assets
         run: |
