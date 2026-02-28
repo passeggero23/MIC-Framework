@@ -1,25 +1,25 @@
-name: mic_framework
-description: "MIC-FRAMEWORK AGENT"
-publish_to: 'none'
-version: 1.0.0+1
+name: mic_app
+description: MIC Framework - Neural Mobile Engine
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.19.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6
-  tflite_v2: ^1.0.0
-  camera: ^0.10.5+5
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^3.0.0
+  camera: ^0.11.0
+  record: ^5.0.0
+  tflite_flutter: ^0.10.4
+  flutter_isolate: ^2.0.4
+  permission_handler: ^11.0.0
+  riverpod: ^2.5.0
+  flutter_riverpod: ^2.5.0
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/model.tflite
-    - assets/labels.txt
+    - assets/model_image.tflite
+    - assets/model_audio.tflite
+    - assets/labels_image.txt
+    - assets/labels_audio.txt
