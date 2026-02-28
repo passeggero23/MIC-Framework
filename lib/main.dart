@@ -1,117 +1,38 @@
-import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
-import 'package:tflite_v2/tflite_v2.dart';
+import 'package:flutter/foundation.dart';
+import 'channel_manager.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  final cameras = await availableCameras();
-  runApp(MaterialApp(debugShowCheckedModeBanner: false, home: MicAgent(cameras: cameras)));
-}
+enum BootStatus { idle, booting, ready, error }
 
-class MicAgent extends StatefulWidget {
-  final List<CameraDescription> cameras;
-  const MicAgent({super.key, required this.cameras});
-  @override
-  State<MicAgent> createState() => _MicAgentState();
-}
+class BootManager {
+  static final BootManager _instance = BootManager._internal();
+  factory BootManager() => _instance;
+  BootManager._internal();
 
-class _MicAgentState extends State<MicAgent> {
-  CameraController? controller;
-  String status = "Inizializzazione...";
-  bool isBusy = false;
+  BootStatus _status = BootStatus.idle;
+  BootStatus get status => _status;
 
-  @override
-  void initState() {
-    super.initState();
-    initApp();
-  }
+  final List<String> _log = [];
+  List<String> get bootLog => List.unmodifiable(_log);
 
-  Future<void> initApp() async {
+  Future<bool> boot() async {
     try {
-      setState(() => status = "Caricamento Modello IA...");
-      String? res = await Tflite.loadModel(
-        model: "assets/model.tflite", 
-        labels: "assets/labels.txt"
-      );
-      
-      setState(() => status = "Avvio Fotocamera...");
-      controller = CameraController(widget.cameras[0], ResolutionPreset.low, enableAudio: false);
-      await controller!.initialize();
-      
-      if (mounted) setState(() => status = "Sistema Pronto");
+      _status = BootStatus.booting;
+      _log.clear();
+
+      _log.add('[BOOT] Inizializzazione Core Engine...');
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      _log.add('[BOOT] Avvio Channel Manager...');
+      await ChannelManager().initialize();
+
+      _log.add('[BOOT] Sistema pronto.');
+      _status = BootStatus.ready;
+      return true;
     } catch (e) {
-      setState(() => status = "Errore: ${e.toString()}");
+      _status = BootStatus.error;
+      _log.add('[BOOT ERROR] $e');
+      debugPrint('[BootManager] Errore: $e');
+      return false;
     }
-  }
-
-  Future<void> analizza() async {
-    if (controller == null || !controller!.value.isInitialized || isBusy) return;
-    setState(() { isBusy = true; status = "Analisi in corso..."; });
-    try {
-      final img = await controller!.takePicture();
-      var res = await Tflite.runModelOnImage(path: img.path, numResults: 1);
-      setState(() {
-        status = (res != null && res.isNotEmpty) 
-            ? "Vedo: ${res[0]['label']} (${(res[0]['confidence'] * 100).toStringAsFixed(0)}%)" 
-            : "Oggetto non riconosciuto";
-      });
-    } catch (e) {
-      setState(() => status = "Errore Analisi");
-    } finally {
-      isBusy = false;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (controller == null || !controller!.value.isInitialized) {
-      return Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(color: Colors.white),
-              const SizedBox(height: 20),
-              Text(status, style: const TextStyle(color: Colors.white)),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          CameraPreview(controller!),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              padding: const EdgeInsets.all(25),
-              decoration: const BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(status, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 15),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(15)),
-                      onPressed: isBusy ? null : analizza, 
-                      child: const Text("COSA VEDI?"),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
