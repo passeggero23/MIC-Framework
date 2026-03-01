@@ -1,31 +1,52 @@
 name: Build
+
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Cache pub dependencies
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: ${{ runner.os }}-pub-
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - name: Build APK
+          flutter-version: 3.19.0
+
+      - name: Download Models & Labels
         run: |
-          flutter pub get
-          flutter build apk --release --no-tree-shake-icons
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 7
+          mkdir -p assets
+
+          curl -L "https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_2018_08_02/mobilenet_v1_1.0_224_quant.tgz" \
+            -o /tmp/mobilenet.tgz
+          tar -xzf /tmp/mobilenet.tgz -C /tmp/
+          cp /tmp/mobilenet_v1_1.0_224_quant.tflite assets/model_image.tflite
+
+          curl -L "https://storage.googleapis.com/download.tensorflow.org/data/ImageNetLabels.txt" \
+            -o assets/labels_image.txt
+
+          curl -L "https://storage.googleapis.com/tfhub-lite-models/google/lite-model/yamnet/classification/tflite/1.tflite" \
+            -o assets/model_audio.tflite
+
+          curl -L "https://raw.githubusercontent.com/tensorflow/models/master/research/audioset/yamnet/yamnet_class_map.csv" \
+            -o /tmp/yamnet_raw.csv
+          tail -n +2 /tmp/yamnet_raw.csv | cut -d',' -f3 | tr -d '"' > assets/labels_audio.txt
+
+          echo "=== Asset scaricati ==="
+          ls -lh assets/
+
+      - name: Check Assets
+        run: |
+          for f in assets/model_image.tflite assets/model_audio.tflite assets/labels_image.txt assets/labels_audio.txt; do
