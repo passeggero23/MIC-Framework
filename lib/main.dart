@@ -1,3 +1,7 @@
+/*
+ * Copyright 2026 MIC-Framework
+ * Licensed under the Apache License, Version 2.0
+ */
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'features/dashboard/presentation/dashboard_screen.dart';
