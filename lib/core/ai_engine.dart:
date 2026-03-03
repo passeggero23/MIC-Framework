@@ -1,1 +1,54 @@
+import 'package:tflite_flutter/tflite_flutter.dart';
+import 'package:flutter/foundation.dart';
+import 'model_loader.dart';
 
+class AIEngine {
+  static final AIEngine _instance = AIEngine._internal();
+  factory AIEngine() => _instance;
+  AIEngine._internal();
+
+  Interpreter? _imageInterpreter;
+  Interpreter? _audioInterpreter;
+  bool isModelLoaded = false;
+
+  Future<void> initialize() async {
+    try {
+      final options = InterpreterOptions()..threads = 4;
+      try {
+        options.addDelegate(GpuDelegateV2());
+        debugPrint('[AIEngine] GPU delegate attivo');
+      } catch (_) {
+        debugPrint('[AIEngine] GPU non disponibile, uso CPU');
+      }
+      final imageModel = await ModelLoader.loadModel('model_image.tflite');
+      final audioModel = await ModelLoader.loadModel('model_audio.tflite');
+      _imageInterpreter = Interpreter.fromFile(imageModel, options: options);
+      _audioInterpreter = Interpreter.fromFile(audioModel, options: options);
+      isModelLoaded = true;
+      debugPrint('[AIEngine] Modelli caricati');
+    } catch (e) {
+      debugPrint('[AIEngine] Errore init: $e');
+      isModelLoaded = false;
+    }
+  }
+
+  List<double> analyzeFrame(List<List<List<List<double>>>> input) {
+    if (!isModelLoaded || _imageInterpreter == null) return [];
+    final output = List.filled(1000, 0.0).reshape([1, 1000]);
+    _imageInterpreter!.run(input, output);
+    return List<double>.from(output[0]);
+  }
+
+  List<double> analyzeAudio(List<List<double>> input) {
+    if (!isModelLoaded || _audioInterpreter == null) return [];
+    final output = List.filled(521, 0.0).reshape([1, 521]);
+    _audioInterpreter!.run(input, output);
+    return List<double>.from(output[0]);
+  }
+
+  void dispose() {
+    _imageInterpreter?.close();
+    _audioInterpreter?.close();
+    isModelLoaded = false;
+  }
+}
