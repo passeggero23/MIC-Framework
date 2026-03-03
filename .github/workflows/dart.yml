@@ -1,82 +1,137 @@
-name: Build
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+Skip to content
+passeggero23
+MIC-Framework
+Repository navigation
+Code
+Issues
+Pull requests
+1
+ (1)
+Actions
+Projects
+Wiki
+Security
+Insights
+Settings
+Build
+Update mic_core.dart #182
+All jobs
+Run details
+Annotations
+1 error
+build
+failed 1 minute ago in 4m 51s
+Search logs
+1s
+0s
+30s
+1s
+0s
+12s
+0s
+0s
+4m 4s
+                     ^^^^^
+lib/core/mic_core.dart:112:31: Error: 'righe' isn't a type.
+Prima di fare commit conta le righe — deve essere circa 55
+                              ^^^^^
+lib/core/mic_core.dart:112:39: Error: 'deve' isn't a type.
+Prima di fare commit conta le righe — deve essere circa 55
+                                      ^^^^
+lib/core/mic_core.dart:114:1: Error: 'Target' isn't a type.
+Target kernel_snapshot failed: Exception
+^^^^^^
+lib/core/mic_core.dart:117:10: Error: Can't use 'Build' because it is declared more than once.
+FAILURE: Build failed with an exception.
+         ^^^^^
+lib/core/mic_core.dart:119:3: Error: 'What' isn't a type.
+* What went wrong:
+  ^^^^
+lib/core/mic_core.dart:120:1: Error: 'Execution' isn't a type.
+Execution failed for task ':app:compileFlutterBuildRelease'.
+^^^^^^^^^
+lib/core/mic_core.dart:121:100: Error: 'zero' isn't a type.
+> Process 'command '/opt/hostedtoolcache/flutter/stable-3.19.0-x64/bin/flutter'' finished with non-zero exit value 1
+                                                                                          ^^^^
+lib/core/mic_core.dart:124:14: Error: 'stacktrace' isn't a type.
+> Run with --stacktrace option to get the stack trace.
+             ^^^^^^^^^^
+lib/core/mic_core.dart:124:43: Error: Expected a function body, but got 'stack'.
+> Run with --stacktrace option to get the stack trace.
+                                          ^^^^^
+lib/core/mic_core.dart:124:43: Error: Expected a function body, but got '{'.
+> Run with --stacktrace option to get the stack trace.
+                                          ^
+lib/core/mic_core.dart:124:43: Error: Expected a declaration, but got 'stack'.
+> Run with --stacktrace option to get the stack trace.
+                                          ^^^^^
+lib/core/mic_core.dart:125:14: Error: 'info' isn't a type.
+> Run with --info or --debug option to get more log output.
+             ^^^^
+lib/core/mic_core.dart:125:24: Error: 'debug' isn't a type.
+> Run with --info or --debug option to get more log output.
+                       ^^^^^
+lib/core/mic_core.dart:125:49: Error: Expected a function body, but got 'log'.
+> Run with --info or --debug option to get more log output.
+                                                ^^^
+lib/core/mic_core.dart:125:49: Error: Expected a function body, but got '{'.
+> Run with --info or --debug option to get more log output.
+                                                ^
+lib/core/mic_core.dart:125:49: Error: Expected a declaration, but got 'log'.
+> Run with --info or --debug option to get more log output.
+                                                ^^^
+lib/core/mic_core.dart:126:14: Error: 'scan' isn't a type.
+> Run with --scan to get full insights.
+             ^^^^
+lib/core/mic_core.dart:126:31: Error: Expected a function body, but got 'insights'.
+> Run with --scan to get full insights.
+                              ^^^^^^^^
+lib/core/mic_core.dart:126:31: Error: Expected a function body, but got '{'.
+> Run with --scan to get full insights.
+                              ^
+lib/core/mic_core.dart:126:31: Error: Expected a declaration, but got 'insights'.
+> Run with --scan to get full insights.
+                              ^^^^^^^^
+lib/core/mic_core.dart:128:3: Error: 'Get' isn't a type.
+* Get more help at https://help.gradle.org
+  ^^^
+lib/core/mic_core.dart:128:12: Error: 'help' isn't a type.
+* Get more help at https://help.gradle.org
+           ^^^^
+lib/core/mic_core.dart:130:1: Error: 'BUILD' isn't a type.
+BUILD FAILED in 4m 34s
+^^^^^
+lib/core/mic_core.dart:130:22: Error: 's' isn't a type.
+BUILD FAILED in 4m 34s
+                     ^
+lib/core/mic_core.dart:131:9: Error: Can't use 'Gradle' because it is declared more than once.
+Running Gradle task 'assembleRelease'...                          275.0s
+        ^^^^^^
+lib/core/mic_core.dart:131:72: Error: 's' isn't a type.
+Running Gradle task 'assembleRelease'...                          275.0s
+                                                                       ^
+lib/core/mic_core.dart:132:8: Error: Can't use 'task' because it is declared more than once.
+Gradle task assembleRelease failed with exit code 1
+       ^^^^
+Target kernel_snapshot failed: Exception
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version: 3.19.0
 
-      - name: Download Models
-        run: |
-          mkdir -p assets
-          mkdir -p /tmp/mobilenet_extract
-          curl -L "https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_2018_08_02/mobilenet_v1_1.0_224_quant.tgz" -o /tmp/mobilenet.tgz
-          tar -xzf /tmp/mobilenet.tgz -C /tmp/mobilenet_extract/
-          cp /tmp/mobilenet_extract/mobilenet_v1_1.0_224_quant.tflite assets/model_image.tflite
-          curl -L "https://storage.googleapis.com/download.tensorflow.org/data/ImageNetLabels.txt" -o assets/labels_image.txt
-          curl -L "https://storage.googleapis.com/tfhub-lite-models/google/lite-model/yamnet/classification/tflite/1.tflite" -o assets/model_audio.tflite
-          curl -L "https://raw.githubusercontent.com/tensorflow/models/master/research/audioset/yamnet/yamnet_class_map.csv" -o /tmp/yamnet_raw.csv
-          tail -n +2 /tmp/yamnet_raw.csv | cut -d',' -f3 | tr -d '"' > assets/labels_audio.txt
-          ls -lh assets/
+FAILURE: Build failed with an exception.
 
-      - name: Backup Dart Sources
-        run: |
-          cp -r lib /tmp/lib_backup
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildRelease'.
+> Process 'command '/opt/hostedtoolcache/flutter/stable-3.19.0-x64/bin/flutter'' finished with non-zero exit value 1
 
-      - name: Regenerate Android Project
-        run: |
-          rm -rf android
-          flutter create --platforms android --project-name mic_framework .
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
 
-      - name: Restore Dart Sources
-        run: |
-          rm -rf lib
-          cp -r /tmp/lib_backup lib
-          echo "=== lib/core ==="
-          ls lib/core/
+* Get more help at https://help.gradle.org
 
-      - name: Fix Android Config
-        run: |
-          python3 << 'EOF'
-          import re
-          with open('android/app/build.gradle', 'r') as f:
-              c = f.read()
-          c = re.sub(r'minSdk\s*=\s*\S+', 'minSdk = 21', c)
-          c = re.sub(r'minSdkVersion\s+\S+', 'minSdkVersion 21', c)
-          with open('android/app/build.gradle', 'w') as f:
-              f.write(c)
-          with open('android/app/src/main/AndroidManifest.xml', 'r') as f:
-              m = f.read()
-          if 'CAMERA' not in m:
-              m = m.replace(
-                  '<application',
-                  '    <uses-permission android:name="android.permission.CAMERA" />\n'
-                  '    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n'
-                  '    <application',
-                  1
-              )
-          with open('android/app/src/main/AndroidManifest.xml', 'w') as f:
-              f.write(m)
-          EOF
-
-      - name: Build APK
-        run: |
-          flutter pub get
-          flutter build apk --release --no-tree-shake-icons
-
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+BUILD FAILED in 4m 1s
+Running Gradle task 'assembleRelease'...                          242.1s
+0s
+0s
+0s
+0s
