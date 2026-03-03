@@ -1,5 +1,0 @@
-package com.mic.framework
-
-import io.flutter.embedding.android.FlutterActivity
-
-class MainActivity: Flutter
