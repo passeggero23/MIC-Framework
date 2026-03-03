@@ -1,10 +1,5 @@
-/*
- * Copyright 2026 MIC-Framework
- * Licensed under the Apache License, Version 2.0
- */
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'ai_engine.dart';
 
 class MICScanner extends StatefulWidget {
   const MICScanner({super.key});
@@ -16,7 +11,6 @@ class MICScanner extends StatefulWidget {
 class _MICScannerState extends State<MICScanner> {
   CameraController? _controller;
   List<CameraDescription>? _cameras;
-  String _result = '⏳ In attesa...';
 
   @override
   void initState() {
@@ -35,14 +29,6 @@ class _MICScannerState extends State<MICScanner> {
       await _controller?.initialize();
       if (!mounted) return;
       setState(() {});
-      _controller?.startImageStream((CameraImage image) {
-        final result = AIEngine().analyzeFrame([]);
-        if (result.isNotEmpty) {
-          setState(() {
-            _result = '✅ Frame elaborato';
-          });
-        }
-      });
     }
   }
 
@@ -59,26 +45,6 @@ class _MICScannerState extends State<MICScanner> {
         child: CircularProgressIndicator(color: Colors.cyanAccent),
       );
     }
-    return Stack(
-      children: [
-        CameraPreview(_controller!),
-        Positioned(
-          bottom: 16,
-          left: 16,
-          right: 16,
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            color: Colors.black54,
-            child: Text(
-              _result,
-              style: const TextStyle(
-                color: Colors.cyanAccent,
-                fontFamily: 'monospace',
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+    return CameraPreview(_controller!);
   }
 }
