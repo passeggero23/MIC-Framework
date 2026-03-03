@@ -18,13 +18,15 @@ jobs:
       - name: Download Models
         run: |
           mkdir -p assets
+          mkdir -p /tmp/mobilenet_extract
           curl -L "https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_2018_08_02/mobilenet_v1_1.0_224_quant.tgz" -o /tmp/mobilenet.tgz
-          tar -xzf /tmp/mobilenet.tgz -C /tmp/
-          cp /tmp/mobilenet_v1_1.0_224_quant.tflite assets/model_image.tflite
+          tar -xzf /tmp/mobilenet.tgz -C /tmp/mobilenet_extract/
+          cp /tmp/mobilenet_extract/mobilenet_v1_1.0_224_quant.tflite assets/model_image.tflite
           curl -L "https://storage.googleapis.com/download.tensorflow.org/data/ImageNetLabels.txt" -o assets/labels_image.txt
           curl -L "https://storage.googleapis.com/tfhub-lite-models/google/lite-model/yamnet/classification/tflite/1.tflite" -o assets/model_audio.tflite
           curl -L "https://raw.githubusercontent.com/tensorflow/models/master/research/audioset/yamnet/yamnet_class_map.csv" -o /tmp/yamnet_raw.csv
           tail -n +2 /tmp/yamnet_raw.csv | cut -d',' -f3 | tr -d '"' > assets/labels_audio.txt
+          ls -lh assets/
       - name: Build APK
         run: |
           flutter pub get
