@@ -10,11 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: 3.19.0
+
       - name: Download Models
         run: |
           mkdir -p assets
@@ -27,10 +29,23 @@ jobs:
           curl -L "https://raw.githubusercontent.com/tensorflow/models/master/research/audioset/yamnet/yamnet_class_map.csv" -o /tmp/yamnet_raw.csv
           tail -n +2 /tmp/yamnet_raw.csv | cut -d',' -f3 | tr -d '"' > assets/labels_audio.txt
           ls -lh assets/
+
+      - name: Backup Dart Sources
+        run: |
+          cp -r lib /tmp/lib_backup
+
       - name: Regenerate Android Project
         run: |
           rm -rf android
           flutter create --platforms android --project-name mic_framework .
+
+      - name: Restore Dart Sources
+        run: |
+          rm -rf lib
+          cp -r /tmp/lib_backup lib
+          echo "=== lib/core ==="
+          ls lib/core/
+
       - name: Fix Android Config
         run: |
           python3 << 'EOF'
@@ -54,10 +69,12 @@ jobs:
           with open('android/app/src/main/AndroidManifest.xml', 'w') as f:
               f.write(m)
           EOF
+
       - name: Build APK
         run: |
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
+
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
