@@ -5,6 +5,7 @@ class MICScanner extends StatefulWidget {
   const MICScanner({super.key});
 
   @override
+  
   State<MICScanner> createState() => _MICScannerState();
 }
 
