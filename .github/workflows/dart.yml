@@ -1,4 +1,4 @@
-name: Build
+rname: Build
 on:
   push:
     branches: [ main ]
@@ -33,7 +33,7 @@ jobs:
       - name: Regenerate Android Project
         run: |
           rm -rf android
-          flutter create --platforms android .
+          flutter create --platforms
           
       - name: Fix Android Config
         run: |
