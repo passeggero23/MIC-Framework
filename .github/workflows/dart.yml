@@ -1,137 +1,64 @@
-Skip to content
-passeggero23
-MIC-Framework
-Repository navigation
-Code
-Issues
-Pull requests
-1
- (1)
-Actions
-Projects
-Wiki
-Security
-Insights
-Settings
-Build
-Update mic_core.dart #182
-All jobs
-Run details
-Annotations
-1 error
-build
-failed 1 minute ago in 4m 51s
-Search logs
-1s
-0s
-30s
-1s
-0s
-12s
-0s
-0s
-4m 4s
-                     ^^^^^
-lib/core/mic_core.dart:112:31: Error: 'righe' isn't a type.
-Prima di fare commit conta le righe — deve essere circa 55
-                              ^^^^^
-lib/core/mic_core.dart:112:39: Error: 'deve' isn't a type.
-Prima di fare commit conta le righe — deve essere circa 55
-                                      ^^^^
-lib/core/mic_core.dart:114:1: Error: 'Target' isn't a type.
-Target kernel_snapshot failed: Exception
-^^^^^^
-lib/core/mic_core.dart:117:10: Error: Can't use 'Build' because it is declared more than once.
-FAILURE: Build failed with an exception.
-         ^^^^^
-lib/core/mic_core.dart:119:3: Error: 'What' isn't a type.
-* What went wrong:
-  ^^^^
-lib/core/mic_core.dart:120:1: Error: 'Execution' isn't a type.
-Execution failed for task ':app:compileFlutterBuildRelease'.
-^^^^^^^^^
-lib/core/mic_core.dart:121:100: Error: 'zero' isn't a type.
-> Process 'command '/opt/hostedtoolcache/flutter/stable-3.19.0-x64/bin/flutter'' finished with non-zero exit value 1
-                                                                                          ^^^^
-lib/core/mic_core.dart:124:14: Error: 'stacktrace' isn't a type.
-> Run with --stacktrace option to get the stack trace.
-             ^^^^^^^^^^
-lib/core/mic_core.dart:124:43: Error: Expected a function body, but got 'stack'.
-> Run with --stacktrace option to get the stack trace.
-                                          ^^^^^
-lib/core/mic_core.dart:124:43: Error: Expected a function body, but got '{'.
-> Run with --stacktrace option to get the stack trace.
-                                          ^
-lib/core/mic_core.dart:124:43: Error: Expected a declaration, but got 'stack'.
-> Run with --stacktrace option to get the stack trace.
-                                          ^^^^^
-lib/core/mic_core.dart:125:14: Error: 'info' isn't a type.
-> Run with --info or --debug option to get more log output.
-             ^^^^
-lib/core/mic_core.dart:125:24: Error: 'debug' isn't a type.
-> Run with --info or --debug option to get more log output.
-                       ^^^^^
-lib/core/mic_core.dart:125:49: Error: Expected a function body, but got 'log'.
-> Run with --info or --debug option to get more log output.
-                                                ^^^
-lib/core/mic_core.dart:125:49: Error: Expected a function body, but got '{'.
-> Run with --info or --debug option to get more log output.
-                                                ^
-lib/core/mic_core.dart:125:49: Error: Expected a declaration, but got 'log'.
-> Run with --info or --debug option to get more log output.
-                                                ^^^
-lib/core/mic_core.dart:126:14: Error: 'scan' isn't a type.
-> Run with --scan to get full insights.
-             ^^^^
-lib/core/mic_core.dart:126:31: Error: Expected a function body, but got 'insights'.
-> Run with --scan to get full insights.
-                              ^^^^^^^^
-lib/core/mic_core.dart:126:31: Error: Expected a function body, but got '{'.
-> Run with --scan to get full insights.
-                              ^
-lib/core/mic_core.dart:126:31: Error: Expected a declaration, but got 'insights'.
-> Run with --scan to get full insights.
-                              ^^^^^^^^
-lib/core/mic_core.dart:128:3: Error: 'Get' isn't a type.
-* Get more help at https://help.gradle.org
-  ^^^
-lib/core/mic_core.dart:128:12: Error: 'help' isn't a type.
-* Get more help at https://help.gradle.org
-           ^^^^
-lib/core/mic_core.dart:130:1: Error: 'BUILD' isn't a type.
-BUILD FAILED in 4m 34s
-^^^^^
-lib/core/mic_core.dart:130:22: Error: 's' isn't a type.
-BUILD FAILED in 4m 34s
-                     ^
-lib/core/mic_core.dart:131:9: Error: Can't use 'Gradle' because it is declared more than once.
-Running Gradle task 'assembleRelease'...                          275.0s
-        ^^^^^^
-lib/core/mic_core.dart:131:72: Error: 's' isn't a type.
-Running Gradle task 'assembleRelease'...                          275.0s
-                                                                       ^
-lib/core/mic_core.dart:132:8: Error: Can't use 'task' because it is declared more than once.
-Gradle task assembleRelease failed with exit code 1
-       ^^^^
-Target kernel_snapshot failed: Exception
+import 'package:record/record.dart';
+import 'package:flutter/foundation.dart';
 
+class MicCore {
+  static final MicCore _instance = MicCore._internal();
+  factory MicCore() => _instance;
+  MicCore._internal();
 
-FAILURE: Build failed with an exception.
+  String systemStatus = 'Inizializzazione...';
+  bool isReady = false;
+  bool secureBoot = false;
 
-* What went wrong:
-Execution failed for task ':app:compileFlutterBuildRelease'.
-> Process 'command '/opt/hostedtoolcache/flutter/stable-3.19.0-x64/bin/flutter'' finished with non-zero exit value 1
+  final AudioRecorder _recorder = AudioRecorder();
+  bool isRecording = false;
+  String audioResult = 'In attesa...';
 
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
+  Future<void> boot() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 500));
+      systemStatus = 'Sistema MIC: Attivo';
+      secureBoot = true;
+      isReady = true;
+      debugPrint('[MicCore] Boot completato');
+    } catch (e) {
+      systemStatus = 'Errore durante il boot';
+      isReady = false;
+      debugPrint('[MicCore] Errore boot: $e');
+    }
+  }
 
-* Get more help at https://help.gradle.org
+  Future<void> startAudio() async {
+    try {
+      final hasPermission = await _recorder.hasPermission();
+      if (!hasPermission) {
+        audioResult = 'Permesso microfono negato';
+        return;
+      }
+      await _recorder.start(
+        const RecordConfig(encoder: AudioEncoder.pcm16bits),
+        path: '',
+      );
+      isRecording = true;
+      debugPrint('[MicCore] Microfono avviato');
+    } catch (e) {
+      audioResult = 'Errore microfono';
+      debugPrint('[MicCore] Errore audio: $e');
+    }
+  }
 
-BUILD FAILED in 4m 1s
-Running Gradle task 'assembleRelease'...                          242.1s
-0s
-0s
-0s
-0s
+  Future<void> stopAudio() async {
+    try {
+      await _recorder.stop();
+      isRecording = false;
+      audioResult = 'Audio registrato';
+    } catch (e) {
+      debugPrint('[MicCore] Errore stop audio: $e');
+    }
+  }
+
+  void dispose() {
+    _recorder.dispose();
+    isRecording = false;
+  }
+}
