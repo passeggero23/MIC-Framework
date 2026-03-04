@@ -1,4 +1,4 @@
-```yaml
+yaml
 name: Build
 on:
   push:
@@ -81,4 +81,3 @@ jobs:
         with:
           name: app-release
           path: build/app/outputs/flutter-apk/app-release.apk
-```
