@@ -15,7 +15,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: 3.19.0
+          flutter-version: 3.24.0
 
       - name: Download Models
         run: |
@@ -43,37 +43,12 @@ jobs:
         run: |
           rm -rf lib
           cp -r /tmp/lib_backup lib
-          echo "=== lib/core ==="
-          ls lib/core/
 
       - name: Fix Android Config
         run: |
-          python3 << 'EOF'
-          import re
-          with open('android/build.gradle', 'r') as f:
-              c = f.read()
-          c = re.sub(r"ext\.kotlin_version\s*=\s*['\"].*?['\"]", "ext.kotlin_version = '1.9.0'", c)
-          with open('android/build.gradle', 'w') as f:
-              f.write(c)
-          with open('android/app/build.gradle', 'r') as f:
-              c = f.read()
-          c = re.sub(r'minSdk\s*=\s*\S+', 'minSdk = 26', c)
-          c = re.sub(r'minSdkVersion\s+\S+', 'minSdkVersion 26', c)
-          with open('android/app/build.gradle', 'w') as f:
-              f.write(c)
-          with open('android/app/src/main/AndroidManifest.xml', 'r') as f:
-              m = f.read()
-          if 'CAMERA' not in m:
-              m = m.replace(
-                  '<application',
-                  '    <uses-permission android:name="android.permission.CAMERA" />\n'
-                  '    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n'
-                  '    <application',
-                  1
-              )
-          with open('android/app/src/main/AndroidManifest.xml', 'w') as f:
-              f.write(m)
-          EOF
+          sed -i 's/minSdk = [0-9]*/minSdk = 26/' android/app/build.gradle
+          sed -i 's/minSdkVersion [0-9]*/minSdkVersion 26/' android/app/build.gradle
+          echo "android.enableR8.fullMode=false" >> android/gradle.properties
 
       - name: Build APK
         run: |
