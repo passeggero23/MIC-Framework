@@ -1,4 +1,4 @@
-lname: Build
+name: Build
 on:
   push:
     branches: [ main ]
@@ -7,22 +7,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: 3.19.0
-          
-      - name: Prep & Fix Assets
+      - name: Prep Assets
         run: |
-          # Se hai messo assets in lib, lo spostiamo nel posto giusto
           if [ -d "lib/assets" ]; then mv lib/assets ./assets; fi
-          
           rm -rf android pubspec.yaml
           flutter create --platforms android --project-name mic_app .
-          
-          # Creazione automatica del pubspec corretto
           cat <<EOF > pubspec.yaml
           name: mic_app
           environment:
@@ -37,12 +31,10 @@ jobs:
               - assets/model.tflite
               - assets/labels.txt
           EOF
-
       - name: Build APK
         run: |
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
-          
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
