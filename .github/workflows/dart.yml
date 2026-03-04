@@ -41,22 +41,38 @@ jobs:
       - name: Fix Android Config
         run: |
           python3 << 'EOF'
-          import re, os
+          import os
           path = 'android/app/build.gradle'
           if not os.path.exists(path):
               path = 'android/app/build.gradle.kts'
           with open(path, 'r') as f:
-              c = f.read()
-          c = re.sub(r'minSdk\s*=\s*\d+', 'minSdk = 26', c)
-          c = re.sub(r'minSdkVersion\s*\(?\d+\)?', 'minSdkVersion 26', c)
-          c = re.sub(r'compileSdk\s*=\s*\d+', 'compileSdk = 35', c)
-          c = re.sub(r'compileSdkVersion\s*\d+', 'compileSdkVersion 35', c)
-          c = re.sub(r'targetSdk\s*=\s*\d+', 'targetSdk = 35', c)
+              lines = f.readlines()
+          new_lines = []
+          for line in lines:
+              if 'minSdk' in line and '=' in line:
+                  indent = len(line) - len(line.lstrip())
+                  new_lines.append(' ' * indent + 'minSdk = 26\n')
+              elif 'minSdkVersion' in line:
+                  indent = len(line) - len(line.lstrip())
+                  new_lines.append(' ' * indent + 'minSdkVersion 26\n')
+              elif 'compileSdk' in line and '=' in line:
+                  indent = len(line) - len(line.lstrip())
+                  new_lines.append(' ' * indent + 'compileSdk = 35\n')
+              elif 'compileSdkVersion' in line:
+                  indent = len(line) - len(line.lstrip())
+                  new_lines.append(' ' * indent + 'compileSdkVersion 35\n')
+              elif 'targetSdk' in line and '=' in line:
+                  indent = len(line) - len(line.lstrip())
+                  new_lines.append(' ' * indent + 'targetSdk = 35\n')
+              else:
+                  new_lines.append(line)
           with open(path, 'w') as f:
-              f.write(c)
+              f.writelines(new_lines)
           with open('android/gradle.properties', 'a') as f:
               f.write('\nandroid.enableR8.fullMode=false\n')
-          print('Fix applicato')
+          print('Contenuto build.gradle dopo fix:')
+          with open(path, 'r') as f:
+              print(f.read())
           EOF
       - name: Build APK
         run: |
