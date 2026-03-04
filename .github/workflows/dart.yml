@@ -12,12 +12,18 @@ jobs:
         with:
           channel: stable
           flutter-version: 3.19.0
-      - name: Prep & Fix
+      - name: Force Clean Build
         run: |
-          # Sposta assets se sono nel posto sbagliato
+          # Spostiamo gli assets nel posto giusto se necessario
           if [ -d "lib/assets" ]; then mv lib/assets ./assets; fi
           
-          # Rigenera il pubspec con versioni specifiche stabili
+          # Cancelliamo le vecchie configurazioni che danno errore
+          rm -rf android pubspec.yaml
+          
+          # Rigeneriamo il progetto da zero
+          flutter create --platforms android --project-name mic_app .
+          
+          # Creiamo un pubspec.yaml perfetto
           cat <<EOF > pubspec.yaml
           name: mic_app
           environment:
@@ -28,23 +34,16 @@ jobs:
             camera: any
             tflite_v2: any
             record: ^5.0.0
-            path_provider: any
           flutter:
             assets:
               - assets/model.tflite
               - assets/labels.txt
           EOF
-          
-          # Crea un main.dart di emergenza se quello attuale ha errori
-          mkdir -p lib
-          cat <<EOF > lib/main.dart
-          import 'package:flutter/material.dart';
-          void main() => runApp(MaterialApp(home: Scaffold(body: Center(child: Text("MIC Pronto")))));
-          EOF
-          
+
       - name: Build APK
         run: |
           flutter pub get
+          # Usiamo --no-tree-shake-icons per evitare altri errori comuni
           flutter build apk --release --no-tree-shake-icons
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
