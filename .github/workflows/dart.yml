@@ -1,3 +1,4 @@
+```yaml
 name: Build
 on:
   push:
@@ -52,8 +53,8 @@ jobs:
           import re
           with open('android/app/build.gradle', 'r') as f:
               c = f.read()
-          c = re.sub(r'minSdk\s*=\s*\S+', 'minSdk = 23', c)
-          c = re.sub(r'minSdkVersion\s+\S+', 'minSdkVersion 23', c)
+          c = re.sub(r'minSdk\s*=\s*\S+', 'minSdk = 26', c)
+          c = re.sub(r'minSdkVersion\s+\S+', 'minSdkVersion 26', c)
           with open('android/app/build.gradle', 'w') as f:
               f.write(c)
           with open('android/app/src/main/AndroidManifest.xml', 'r') as f:
@@ -80,3 +81,4 @@ jobs:
         with:
           name: app-release
           path: build/app/outputs/flutter-apk/app-release.apk
+```
