@@ -1,129 +1,49 @@
-name: Build
+lname: Build
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: 3.19.0
-      - name: Download Models
+          
+      - name: Prep & Fix Assets
         run: |
-          mkdir -p assets
-          mkdir -p /tmp/mobilenet_extract
-          curl -L "https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_2018_08_02/mobilenet_v1_1.0_224_quant.tgz" -o /tmp/mobilenet.tgz
-          tar -xzf /tmp/mobilenet.tgz -C /tmp/mobilenet_extract/
-          cp /tmp/mobilenet_extract/mobilenet_v1_1.0_224_quant.tflite assets/model_image.tflite
-          curl -L "https://storage.googleapis.com/download.tensorflow.org/data/ImageNetLabels.txt" -o assets/labels_image.txt
-          curl -L "https://storage.googleapis.com/tfhub-lite-models/google/lite-model/yamnet/classification/tflite/1.tflite" -o assets/model_audio.tflite
-          curl -L "https://raw.githubusercontent.com/tensorflow/models/master/research/audioset/yamnet/yamnet_class_map.csv" -o /tmp/yamnet_raw.csv
-          tail -n +2 /tmp/yamnet_raw.csv | cut -d',' -f3 | tr -d '"' > assets/labels_audio.txt
-          ls -lh assets/
-      - name: Fix mic_core.dart
-        run: python3 /dev/stdin << 'EOF'
-          import os
-          code = (
-            "import 'package:record/record.dart';\n"
-            "import 'package:flutter/foundation.dart';\n"
-            "\n"
-            "class MicCore {\n"
-            "  static final MicCore _instance = MicCore._internal();\n"
-            "  factory MicCore() => _instance;\n"
-            "  MicCore._internal();\n"
-            "\n"
-            "  String systemStatus = 'Inizializzazione...';\n"
-            "  bool isReady = false;\n"
-            "  bool secureBoot = false;\n"
-            "  final AudioRecorder _recorder = AudioRecorder();\n"
-            "  bool isRecording = false;\n"
-            "  String audioResult = 'In attesa...';\n"
-            "\n"
-            "  Future<void> boot() async {\n"
-            "    try {\n"
-            "      await Future.delayed(const Duration(milliseconds: 500));\n"
-            "      systemStatus = 'Sistema MIC: Attivo';\n"
-            "      secureBoot = true;\n"
-            "      isReady = true;\n"
-            "    } catch (e) {\n"
-            "      systemStatus = 'Errore durante il boot';\n"
-            "      isReady = false;\n"
-            "    }\n"
-            "  }\n"
-            "\n"
-            "  Future<void> startAudio() async {\n"
-            "    try {\n"
-            "      final hasPermission = await _recorder.hasPermission();\n"
-            "      if (!hasPermission) { audioResult = 'Permesso negato'; return; }\n"
-            "      await _recorder.start(const RecordConfig(encoder: AudioEncoder.pcm16bits), path: '');\n"
-            "      isRecording = true;\n"
-            "    } catch (e) { audioResult = 'Errore microfono'; }\n"
-            "  }\n"
-            "\n"
-            "  Future<void> stopAudio() async {\n"
-            "    try {\n"
-            "      await _recorder.stop();\n"
-            "      isRecording = false;\n"
-            "      audioResult = 'Audio registrato';\n"
-            "    } catch (e) {}\n"
-            "  }\n"
-            "\n"
-            "  void dispose() { _recorder.dispose(); isRecording = false; }\n"
-            "}\n"
-          )
-          with open('lib/core/mic_core.dart', 'w') as f:
-            f.write(code)
-          print('mic_core.dart scritto:', len(code), 'bytes')
+          # Se hai messo assets in lib, lo spostiamo nel posto giusto
+          if [ -d "lib/assets" ]; then mv lib/assets ./assets; fi
+          
+          rm -rf android pubspec.yaml
+          flutter create --platforms android --project-name mic_app .
+          
+          # Creazione automatica del pubspec corretto
+          cat <<EOF > pubspec.yaml
+          name: mic_app
+          environment:
+            sdk: '>=3.0.0 <4.0.0'
+          dependencies:
+            flutter:
+              sdk: flutter
+            camera: any
+            tflite_v2: any
+          flutter:
+            assets:
+              - assets/model.tflite
+              - assets/labels.txt
           EOF
-      - name: Backup Dart Sources
-        run: cp -r lib /tmp/lib_backup
-      - name: Regenerate Android Project
-        run: |
-          rm -rf android
-          flutter create --platforms android --project-name mic_framework .
-      - name: Restore Dart Sources
-        run: |
-          rm -rf lib
-          cp -r /tmp/lib_backup lib
-      - name: Fix Android Config
-        run: |
-          python3 << 'EOF'
-          import os
-          path = 'android/app/build.gradle'
-          with open(path, 'r') as f:
-              lines = f.readlines()
-          new_lines = []
-          for line in lines:
-              if 'minSdk' in line and '=' in line:
-                  indent = len(line) - len(line.lstrip())
-                  new_lines.append(' ' * indent + 'minSdk = 26\n')
-              elif 'minSdkVersion' in line:
-                  indent = len(line) - len(line.lstrip())
-                  new_lines.append(' ' * indent + 'minSdkVersion 26\n')
-              else:
-                  new_lines.append(line)
-          with open(path, 'w') as f:
-              f.writelines(new_lines)
-          with open('android/build.gradle', 'r') as f:
-              root = f.read()
-          root = root.replace("ext.kotlin_version = '1.7.10'", "ext.kotlin_version = '1.9.0'")
-          with open('android/build.gradle', 'w') as f:
-              f.write(root)
-          with open('android/gradle.properties', 'a') as f:
-              f.write('\nandroid.enableR8.fullMode=false\n')
-          EOF
+
       - name: Build APK
         run: |
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
-      - name: Upload
+          
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release
