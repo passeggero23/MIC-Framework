@@ -1,62 +1,25 @@
-name: Build
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version: 3.24.0
-
-      - name: Download Models
+- name: Fix Android Config
         run: |
-          mkdir -p assets
-          mkdir -p /tmp/mobilenet_extract
-          curl -L "https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_2018_08_02/mobilenet_v1_1.0_224_quant.tgz" -o /tmp/mobilenet.tgz
-          tar -xzf /tmp/mobilenet.tgz -C /tmp/mobilenet_extract/
-          cp /tmp/mobilenet_extract/mobilenet_v1_1.0_224_quant.tflite assets/model_image.tflite
-          curl -L "https://storage.googleapis.com/download.tensorflow.org/data/ImageNetLabels.txt" -o assets/labels_image.txt
-          curl -L "https://storage.googleapis.com/tfhub-lite-models/google/lite-model/yamnet/classification/tflite/1.tflite" -o assets/model_audio.tflite
-          curl -L "https://raw.githubusercontent.com/tensorflow/models/master/research/audioset/yamnet/yamnet_class_map.csv" -o /tmp/yamnet_raw.csv
-          tail -n +2 /tmp/yamnet_raw.csv | cut -d',' -f3 | tr -d '"' > assets/labels_audio.txt
-          ls -lh assets/
+          python3 << 'EOF'
+          import re, os
 
-      - name: Backup Dart Sources
-        run: |
-          cp -r lib /tmp/lib_backup
+          # Fix app/build.gradle
+          path = 'android/app/build.gradle'
+          if not os.path.exists(path):
+              path = 'android/app/build.gradle.kts'
+          
+          with open(path, 'r') as f:
+              c = f.read()
+          
+          c = re.sub(r'minSdk\s*=\s*\d+', 'minSdk = 26', c)
+          c = re.sub(r'minSdkVersion\s*\(?(\d+)\)?', 'minSdkVersion 26', c)
+          
+          with open(path, 'w') as f:
+              f.write(c)
 
-      - name: Regenerate Android Project
-        run: |
-          rm -rf android
-          flutter create --platforms android --project-name mic_framework .
+          # Fix gradle.properties
+          with open('android/gradle.properties', 'a') as f:
+              f.write('\nandroid.enableR8.fullMode=false\n')
 
-      - name: Restore Dart Sources
-        run: |
-          rm -rf lib
-          cp -r /tmp/lib_backup lib
-
-      - name: Fix Android Config
-        run: |
-          sed -i 's/minSdk = [0-9]*/minSdk = 26/' android/app/build.gradle
-          sed -i 's/minSdkVersion [0-9]*/minSdkVersion 26/' android/app/build.gradle
-          echo "android.enableR8.fullMode=false" >> android/gradle.properties
-
-      - name: Build APK
-        run: |
-          flutter pub get
-          flutter build apk --release --no-tree-shake-icons
-
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          print('Fix applicato a:', path)
+          EOF
