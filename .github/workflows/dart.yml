@@ -50,6 +50,11 @@ jobs:
         run: |
           python3 << 'EOF'
           import re
+          with open('android/build.gradle', 'r') as f:
+              c = f.read()
+          c = re.sub(r"ext\.kotlin_version\s*=\s*['\"].*?['\"]", "ext.kotlin_version = '1.9.0'", c)
+          with open('android/build.gradle', 'w') as f:
+              f.write(c)
           with open('android/app/build.gradle', 'r') as f:
               c = f.read()
           c = re.sub(r'minSdk\s*=\s*\S+', 'minSdk = 26', c)
