@@ -43,8 +43,6 @@ jobs:
           python3 << 'EOF'
           import os
           path = 'android/app/build.gradle'
-          if not os.path.exists(path):
-              path = 'android/app/build.gradle.kts'
           with open(path, 'r') as f:
               lines = f.readlines()
           new_lines = []
@@ -55,24 +53,13 @@ jobs:
               elif 'minSdkVersion' in line:
                   indent = len(line) - len(line.lstrip())
                   new_lines.append(' ' * indent + 'minSdkVersion 26\n')
-              elif 'compileSdk' in line and '=' in line:
-                  indent = len(line) - len(line.lstrip())
-                  new_lines.append(' ' * indent + 'compileSdk = 35\n')
-              elif 'compileSdkVersion' in line:
-                  indent = len(line) - len(line.lstrip())
-                  new_lines.append(' ' * indent + 'compileSdkVersion 35\n')
-              elif 'targetSdk' in line and '=' in line:
-                  indent = len(line) - len(line.lstrip())
-                  new_lines.append(' ' * indent + 'targetSdk = 35\n')
               else:
                   new_lines.append(line)
           with open(path, 'w') as f:
               f.writelines(new_lines)
           with open('android/gradle.properties', 'a') as f:
               f.write('\nandroid.enableR8.fullMode=false\n')
-          print('Contenuto build.gradle dopo fix:')
-          with open(path, 'r') as f:
-              print(f.read())
+          print('Fix applicato')
           EOF
       - name: Build APK
         run: |
