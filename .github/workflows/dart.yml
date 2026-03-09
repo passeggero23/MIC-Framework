@@ -1,4 +1,4 @@
-name: Flutter Auto-Repair & Build
+name: Flutter Build
 
 on:
   push:
@@ -16,14 +16,13 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      - name: Repair Project Structure
+      - name: Repair and Force Name
         run: |
-          # Questo comando rigenera le cartelle di sistema mancanti
-          flutter create . --platforms android
+          # Forza il nome in minuscolo qui, così non può sbagliare
+          flutter create . --project-name mic_app --offline
           
-      - name: Add Camera Permissions to Manifest
+      - name: Add Permissions
         run: |
-          # Inserisce forzatamente il permesso camera nel manifest generato
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' android/app/src/main/AndroidManifest.xml
 
       - name: Install dependencies
