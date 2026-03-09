@@ -1,23 +1,23 @@
 name: mic_app
-description: MIC Framework - Neural Mobile Engine
+description: AI Recognition App
+version: 1.0.0+1
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
-  flutter: ">=3.19.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  camera: ^0.11.0
-  record: ^5.0.0
-  tflite_flutter: ^0.10.4
+  camera: ^0.10.5
+  tflite_flutter: ^0.10.1
   permission_handler: ^11.0.0
-  flutter_riverpod: ^2.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/model_image.tflite
-    - assets/model_audio.tflite
-    - assets/labels_image.txt
-    - assets/labels_audio.txt
+    - assets/model.tflite
+    - assets/labels.txt
