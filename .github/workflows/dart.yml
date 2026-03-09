@@ -1,60 +1,75 @@
-name: Build
-on:
-  push:
-    branches: [ main ]
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version: 3.19.0
+import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
+import 'package:tflite_flutter/tflite_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-      - name: Fix Assets & Code
-        run: |
-          # 1. Sposta e pulisce
-          if [ -d "lib/assets" ]; then mv lib/assets ./assets; fi
-          mkdir -p assets
-          
-          # 2. SE I FILE NON CI SONO, LI CREIAMO VUOTI (per non far fallire la build)
-          if [ ! -f "assets/model.tflite" ]; then touch assets/model.tflite; fi
-          if [ ! -f "assets/labels.txt" ]; then echo "label1" > assets/labels.txt; fi
+late List<CameraDescription> _cameras;
 
-          # 3. Rigenera il progetto da zero (risolve errore Gradle unsupported)
-          rm -rf android pubspec.yaml
-          flutter create --platforms android --project-name mic_app .
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Richiesta rigorosa permessi
+  var status = await Permission.camera.request();
+  if (status.isGranted) {
+    _cameras = await availableCameras();
+    runApp(const MicApp());
+  } else {
+    runApp(const MaterialApp(home: Scaffold(body: Center(child: Text("Permesso Camera Negato")))));
+  }
+}
 
-          # 4. Pubspec blindato
-          cat <<EOF > pubspec.yaml
-          name: mic_app
-          environment:
-            sdk: '>=3.0.0 <4.0.0'
-          dependencies:
-            flutter:
-              sdk: flutter
-          flutter:
-            assets:
-              - assets/model.tflite
-              - assets/labels.txt
-          EOF
+class MicApp extends StatefulWidget {
+  const MicApp({super.key});
+  @override
+  State<MicApp> createState() => _MicAppState();
+}
 
-          # 5. Main.dart ultra-minimalista (ignora tutti i tuoi errori Dart per ora)
-          mkdir -p lib
-          cat <<EOF > lib/main.dart
-          import 'package:flutter/material.dart';
-          void main() => runApp(MaterialApp(home: Scaffold(body: Center(child: Text("BUILD SUCCESS")))));
-          EOF
+class _MicAppState extends State<MicApp> {
+  CameraController? controller;
+  Interpreter? _interpreter;
+  List<String>? _labels;
 
-      - name: Build APK
-        run: |
-          flutter pub get
-          flutter build apk --release --no-tree-shake-icons
+  @override
+  void initState() {
+    super.initState();
+    _setupApp();
+  }
 
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+  Future<void> _setupApp() async {
+    // Caricamento Asset IA
+    _interpreter = await Interpreter.fromAsset('assets/model.tflite');
+    final labelData = await DefaultAssetBundle.of(context).loadString('assets/labels.txt');
+    _labels = labelData.split('\n');
+
+    // Inizializzazione Camera
+    controller = CameraController(_cameras[0], ResolutionPreset.medium);
+    controller!.initialize().then((_) {
+      if (!mounted) return;
+      setState(() {});
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller == null || !controller!.value.isInitialized) {
+      return const Container();
+    }
+    return MaterialApp(
+      home: Scaffold(
+        body: Stack(
+          children: [
+            CameraPreview(controller!),
+            Positioned(
+              bottom: 30,
+              left: 20,
+              child: Text(
+                "IA Pronta: ${_labels?.length ?? 0} classi caricate",
+                style: const TextStyle(color: Colors.white, backgroundColor: Colors.black54),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
