@@ -16,13 +16,14 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      - name: Repair and Force Name
+      - name: Force Repair Structure
         run: |
-          # Forza il nome in minuscolo qui, così non può sbagliare
-          flutter create . --project-name mic_app --offline
+          # Usiamo --force per obbligarlo a creare la cartella android anche se esistono già file
+          flutter create . --project-name mic_app --force --platforms android
           
-      - name: Add Permissions
+      - name: Inject Camera Permissions
         run: |
+          # Scriviamo il permesso direttamente nel file generato
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' android/app/src/main/AndroidManifest.xml
 
       - name: Install dependencies
