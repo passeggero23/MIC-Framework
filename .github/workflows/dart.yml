@@ -16,21 +16,26 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      - name: Force Repair Structure
+      - name: Surgical Repair
         run: |
-          # Usiamo --force per obbligarlo a creare la cartella android anche se esistono già file
-          flutter create . --project-name mic_app --force --platforms android
+          # 1. Creiamo un progetto pulito a fianco
+          flutter create repair_temp --project-name mic_app --platforms android
           
-      - name: Inject Camera Permissions
+          # 2. Spostiamo la cartella android nel tuo repository
+          cp -r repair_temp/android .
+          
+          # 3. Pulizia
+          rm -rf repair_temp
+
+      - name: Inject Permissions
         run: |
-          # Scriviamo il permesso direttamente nel file generato
+          # Inseriamo il permesso fotocamera nel posto corretto
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' android/app/src/main/AndroidManifest.xml
 
-      - name: Install dependencies
-        run: flutter pub get
-
       - name: Build APK
-        run: flutter build apk --release
+        run: |
+          flutter pub get
+          flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
