@@ -16,16 +16,19 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      - name: Surgical Repair & AI SDK Upgrade
+      - name: Surgical Repair & No-Compress Rule
         run: |
-          # 1. Rigenerazione struttura pulita
+          # 1. Rigenerazione struttura
           flutter create repair_temp --project-name mic_app --platforms android
           cp -r repair_temp/android .
           rm -rf repair_temp
           
-          # 2. Upgrade SDK version a 26 (Richiesto da TensorFlow & Camera)
-          # Usiamo una regex più aggressiva per essere sicuri di colpire il bersaglio
+          # 2. Upgrade SDK a 26
           sed -i 's/minSdkVersion .*/minSdkVersion 26/g' android/app/build.gradle
+          
+          # 3. REGOLA D'ORO: Impedisce la compressione dei modelli TFLite
+          # Inseriamo la clausola aaptOptions nel build.gradle
+          sed -i '/android {/a \    aaptOptions { noCompress "tflite" }' android/app/build.gradle
 
       - name: Inject Permissions
         run: |
