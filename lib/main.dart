@@ -10,7 +10,7 @@ Future<void> main() async {
   await Permission.camera.request();
   _cameras = await availableCameras();
   runApp(MaterialApp(
-    home: const MicAIApp(),
+    home: MicAIApp(), // Rimosso const
     debugShowCheckedModeBanner: false,
   ));
 }
@@ -42,7 +42,7 @@ class _MicAIAppState extends State<MicAIApp> {
       if (!mounted) return;
       setState(() {});
     } catch (e) {
-      debugPrint("Errore: $e");
+      debugPrint("Errore IA: $e");
     }
   }
 
@@ -55,9 +55,15 @@ class _MicAIAppState extends State<MicAIApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Se la camera non è pronta, mostriamo un caricamento
     if (controller == null || !controller!.value.isInitialized) {
-      return Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(), // Rimosso const
+        ),
+      );
     }
+
     return Scaffold(
       body: Stack(
         children: [
@@ -66,12 +72,15 @@ class _MicAIAppState extends State<MicAIApp> {
             bottom: 50,
             left: 20,
             right: 20,
-            child: Container(
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(10)),
+            child: Container( // Rimosso const
+              padding: EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: Colors.black54, 
+                borderRadius: BorderRadius.circular(10)
+              ),
               child: Text(
-                "IA Attiva - Classi: ${_labels?.length ?? 0}",
-                style: const TextStyle(color: Colors.white, fontSize: 16),
+                "IA MIC ATTIVA\nModello: ${_labels?.length ?? 0} classi",
+                style: TextStyle(color: Colors.white, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
