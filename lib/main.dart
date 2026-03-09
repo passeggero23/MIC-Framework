@@ -7,24 +7,21 @@ late List<CameraDescription> _cameras;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Richiesta rigorosa permessi
-  var status = await Permission.camera.request();
-  if (status.isGranted) {
-    _cameras = await availableCameras();
-    runApp(const MicApp());
-  } else {
-    runApp(const MaterialApp(home: Scaffold(body: Center(child: Text("Permesso Camera Negato")))));
-  }
+  await Permission.camera.request();
+  _cameras = await availableCameras();
+  runApp(MaterialApp(
+    home: const MicAIApp(),
+    debugShowCheckedModeBanner: false,
+  ));
 }
 
-class MicApp extends StatefulWidget {
-  const MicApp({super.key});
+class MicAIApp extends StatefulWidget {
+  const MicAIApp({super.key});
   @override
-  State<MicApp> createState() => _MicAppState();
+  State<MicAIApp> createState() => _MicAIAppState();
 }
 
-class _MicAppState extends State<MicApp> {
+class _MicAIAppState extends State<MicAIApp> {
   CameraController? controller;
   Interpreter? _interpreter;
   List<String>? _labels;
@@ -32,43 +29,54 @@ class _MicAppState extends State<MicApp> {
   @override
   void initState() {
     super.initState();
-    _setupApp();
+    _initializeEngine();
   }
 
-  Future<void> _setupApp() async {
-    // Caricamento Asset IA
-    _interpreter = await Interpreter.fromAsset('assets/model.tflite');
-    final labelData = await DefaultAssetBundle.of(context).loadString('assets/labels.txt');
-    _labels = labelData.split('\n');
-
-    // Inizializzazione Camera
-    controller = CameraController(_cameras[0], ResolutionPreset.medium);
-    controller!.initialize().then((_) {
+  Future<void> _initializeEngine() async {
+    try {
+      _interpreter = await Interpreter.fromAsset('assets/model.tflite');
+      final labelData = await DefaultAssetBundle.of(context).loadString('assets/labels.txt');
+      _labels = labelData.split('\n');
+      controller = CameraController(_cameras[0], ResolutionPreset.medium);
+      await controller!.initialize();
       if (!mounted) return;
       setState(() {});
-    });
+    } catch (e) {
+      debugPrint("Errore: $e");
+    }
+  }
+
+  @override
+  void dispose() {
+    controller?.dispose();
+    _interpreter?.close();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     if (controller == null || !controller!.value.isInitialized) {
-      return const Container();
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    return MaterialApp(
-      home: Scaffold(
-        body: Stack(
-          children: [
-            CameraPreview(controller!),
-            Positioned(
-              bottom: 30,
-              left: 20,
+    return Scaffold(
+      body: Stack(
+        children: [
+          CameraPreview(controller!),
+          Positioned(
+            bottom: 50,
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(10)),
               child: Text(
-                "IA Pronta: ${_labels?.length ?? 0} classi caricate",
-                style: const TextStyle(color: Colors.white, backgroundColor: Colors.black54),
+                "IA Attiva - Classi: ${_labels?.length ?? 0}",
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                textAlign: TextAlign.center,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
