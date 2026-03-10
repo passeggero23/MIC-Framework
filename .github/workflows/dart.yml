@@ -23,39 +23,41 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      # FIX: Genera Android con nome valido, poi corregge
       - name: Generate Android project
         run: |
           if [ ! -d "android/app" ]; then
-            echo "⚠️ Android folder missing, generating with valid package name..."
-            # Usa un nome temporaneo valido per flutter create
             flutter config --no-analytics
             flutter create --platforms android --project-name mic_app .
           fi
 
-      - name: Fix minSdkVersion to 21
-        run: |
-          if [ -f "android/app/build.gradle" ]; then
-            sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' android/app/build.gradle
-          elif [ -f "android/app/build.gradle.kts" ]; then
-            sed -i 's/minSdk = [0-9]\+/minSdk = 21/g' android/app/build.gradle.kts
-          fi
-
-      - name: Add TensorFlow Lite dependencies
+      - name: Configure Android build.gradle
         run: |
           BUILD_FILE="android/app/build.gradle"
-          if [ -f "$BUILD_FILE" ] && ! grep -q "tensorflow-lite" $BUILD_FILE; then
-            sed -i '/dependencies {/a \    implementation "org.tensorflow:tensorflow-lite:2.14.0"\n    implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"' $BUILD_FILE
+          
+          # Fix minSdkVersion
+          sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' "$BUILD_FILE"
+          
+          # Fix noCompress tflite
+          if ! grep -q 'noCompress "tflite"' "$BUILD_FILE"; then
+            sed -i '/android {/a \    aaptOptions { noCompress "tflite" }' "$BUILD_FILE"
           fi
-          if [ -f "$BUILD_FILE" ] && ! grep -q 'noCompress "tflite"' $BUILD_FILE; then
-            sed -i '/android {/a \    aaptOptions { noCompress "tflite" }' $BUILD_FILE
-          fi
+          
+          # Add TensorFlow dependencies (crea blocco dependencies se non esiste)
+          if ! grep -q "tensorflow-lite" "$BUILD_FILE"; then
+            if grep -q "^dependencies {" "$BUILD_FILE"; then
+              # Inserisci prima della chiusura del blocco dependencies
+              sed -i '/^dependencies {/,/^}/{ /^}/i\    implementation "org.tensorflow:tensorflow-lite:2.14.0"\n    implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"
+}' "$BUILD_FILE"
+            else
+              # Aggiungi blocco nuovo alla fine
+              cat >> "$BUILD_FILE" << 'EOF'
 
-      - name: Check Camera Permission
-        run: |
-          MANIFEST="android/app/src/main/AndroidManifest.xml"
-          if [ -f "$MANIFEST" ] && ! grep -q "android.permission.CAMERA" "$MANIFEST"; then
-            sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA"/>' "$MANIFEST"
+dependencies {
+    implementation "org.tensorflow:tensorflow-lite:2.14.0"
+    implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"
+}
+EOF
+            fi
           fi
 
       - name: Build APK
