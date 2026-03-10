@@ -14,7 +14,7 @@ Future<void> main() async {
   _cameras = await availableCameras();
   runApp(const MaterialApp(
     home: MicAIApp(),
-    debugShowCheckedModeBanner: false, // Pulito l'errore visto nel log 1000046998
+    debugShowCheckedModeBanner: false,
   ));
 }
 
@@ -38,22 +38,18 @@ class _MicAIAppState extends State<MicAIApp> {
 
   Future<void> _initializeEngine() async {
     try {
-      setState(() => statusMessage = "Estrazione modello...");
-      // Gestione del file da 6.55MB (da log 1000046980)
+      setState(() => statusMessage = "Configurazione IA...");
       final byteData = await rootBundle.load('assets/model.tflite');
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/model.tflite');
       await file.writeAsBytes(byteData.buffer.asUint8List());
 
-      setState(() => statusMessage = "Caricamento IA...");
-      //fromFile risolve il problema "Unable to create model from buffer" (log 1000046967)
+      // Caricamento con supporto Select-Ops (Flex)
       _interpreter = Interpreter.fromFile(file);
       
-      setState(() => statusMessage = "Lettura labels...");
       final labelData = await rootBundle.loadString('assets/labels.txt');
       _labels = labelData.split('\n').where((s) => s.isNotEmpty).toList();
 
-      setState(() => statusMessage = "Avvio Camera...");
       controller = CameraController(_cameras[0], ResolutionPreset.medium);
       await controller!.initialize();
       
@@ -74,18 +70,7 @@ class _MicAIAppState extends State<MicAIApp> {
   @override
   Widget build(BuildContext context) {
     if (controller == null || !controller!.value.isInitialized) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 20),
-              Text(statusMessage, textAlign: TextAlign.center),
-            ],
-          ),
-        ),
-      );
+      return Scaffold(body: Center(child: Text(statusMessage, textAlign: TextAlign.center)));
     }
     return Scaffold(
       body: Stack(
@@ -95,9 +80,9 @@ class _MicAIAppState extends State<MicAIApp> {
             bottom: 30, left: 20, right: 20,
             child: Container(
               padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(10)),
+              color: Colors.black54,
               child: Text(
-                "IA ATTIVA\nClassi caricate: ${_labels?.length ?? 0}",
+                "SISTEMA ATTIVO\nClassi: ${_labels?.length ?? 0}",
                 style: const TextStyle(color: Colors.white),
                 textAlign: TextAlign.center,
               ),
