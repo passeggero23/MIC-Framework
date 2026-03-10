@@ -38,25 +38,28 @@ class _MicAIAppState extends State<MicAIApp> {
 
   Future<void> _initializeEngine() async {
     try {
-      setState(() => statusMessage = "Configurazione IA...");
+      setState(() => statusMessage = "Estrazione modello...");
       final byteData = await rootBundle.load('assets/model.tflite');
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/model.tflite');
       await file.writeAsBytes(byteData.buffer.asUint8List());
 
-      // Caricamento con supporto Select-Ops (Flex)
+      setState(() => statusMessage = "Caricamento IA...");
+      // Proviamo il caricamento con le opzioni di default
       _interpreter = Interpreter.fromFile(file);
       
+      setState(() => statusMessage = "Lettura etichette...");
       final labelData = await rootBundle.loadString('assets/labels.txt');
       _labels = labelData.split('\n').where((s) => s.isNotEmpty).toList();
 
+      setState(() => statusMessage = "Avvio Fotocamera...");
       controller = CameraController(_cameras[0], ResolutionPreset.medium);
       await controller!.initialize();
       
       if (!mounted) return;
-      setState(() => statusMessage = "Pronto!");
+      setState(() => statusMessage = "SISTEMA PRONTO");
     } catch (e) {
-      setState(() => statusMessage = "ERRORE:\n$e");
+      setState(() => statusMessage = "ERRORE CARICAMENTO:\n$e");
     }
   }
 
@@ -70,7 +73,14 @@ class _MicAIAppState extends State<MicAIApp> {
   @override
   Widget build(BuildContext context) {
     if (controller == null || !controller!.value.isInitialized) {
-      return Scaffold(body: Center(child: Text(statusMessage, textAlign: TextAlign.center)));
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Text(statusMessage, textAlign: TextAlign.center),
+          ),
+        ),
+      );
     }
     return Scaffold(
       body: Stack(
@@ -80,10 +90,10 @@ class _MicAIAppState extends State<MicAIApp> {
             bottom: 30, left: 20, right: 20,
             child: Container(
               padding: const EdgeInsets.all(15),
-              color: Colors.black54,
+              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(10)),
               child: Text(
-                "SISTEMA ATTIVO\nClassi: ${_labels?.length ?? 0}",
-                style: const TextStyle(color: Colors.white),
+                "INPUT VISIONE ATTIVO\nModello: ${_labels?.length ?? 0} classi",
+                style: const TextStyle(color: Colors.white, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
