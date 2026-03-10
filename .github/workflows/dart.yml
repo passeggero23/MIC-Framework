@@ -23,12 +23,14 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      # FIX CRITICO: Genera la cartella android se manca (come nel tuo repo)
+      # FIX: Genera Android con nome valido, poi corregge
       - name: Generate Android project
         run: |
           if [ ! -d "android/app" ]; then
-            echo "⚠️ Android folder missing, generating..."
-            flutter create --platforms android .
+            echo "⚠️ Android folder missing, generating with valid package name..."
+            # Usa un nome temporaneo valido per flutter create
+            flutter config --no-analytics
+            flutter create --platforms android --project-name mic_app .
           fi
 
       - name: Fix minSdkVersion to 21
