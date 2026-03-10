@@ -17,22 +17,22 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      - name: Rebuild Android & Fix SDK 21
+      - name: Reset & SDK 21 Fix
         run: |
-          # Pulizia e reset struttura Android
+          # 1. Pulizia totale della cartella Android per evitare conflitti
           flutter create repair_temp --project-name mic_app --platforms android
           rm -rf android
           mv repair_temp/android .
           rm -rf repair_temp
 
-          # Forza minSdkVersion 21 (Risolve Log #252)
+          # 2. Forza minSdkVersion 21 (Risolve Log #252)
           sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' android/app/build.gradle
           echo "flutter.minSdkVersion=21" >> android/local.properties
 
-          # Configurazione No-Compress per TensorFlow
+          # 3. Ottimizzazione caricamento file .tflite
           sed -i '/android {/a \    aaptOptions { noCompress "tflite" }' android/app/build.gradle
 
-          # Iniezione dipendenze IA (Corretto per Log #256)
+          # 4. Iniezione dipendenze IA (Corretto per Log #256)
           cat <<EOF >> android/app/build.gradle
           dependencies {
               implementation "org.tensorflow:tensorflow-lite:2.14.0"
