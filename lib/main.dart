@@ -10,15 +10,11 @@ late List<CameraDescription> _cameras;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Chiediamo i permessi prima di partire
   await Permission.camera.request();
-  
   _cameras = await availableCameras();
-  
   runApp(const MaterialApp(
     home: MicAIApp(),
-    debugShowCheckedModeBanner: false, // Rimosso l'errore showErrorGrid
+    debugShowCheckedModeBanner: false, // Pulito l'errore visto nel log 1000046998
   ));
 }
 
@@ -42,22 +38,73 @@ class _MicAIAppState extends State<MicAIApp> {
 
   Future<void> _initializeEngine() async {
     try {
-      setState(() => statusMessage = "Preparazione file modello...");
-      
-      // Carichiamo i byte del modello dagli asset
+      setState(() => statusMessage = "Estrazione modello...");
+      // Gestione del file da 6.55MB (da log 1000046980)
       final byteData = await rootBundle.load('assets/model.tflite');
-      
-      // Lo scriviamo in un file temporaneo (più stabile per i modelli grandi)
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/model.tflite');
-      await file.writeAsBytes(byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
+      await file.writeAsBytes(byteData.buffer.asUint8List());
 
-      setState(() => statusMessage = "Avvio motore IA...");
-      // Inizializziamo l'interprete TensorFlow
+      setState(() => statusMessage = "Caricamento IA...");
+      //fromFile risolve il problema "Unable to create model from buffer" (log 1000046967)
       _interpreter = Interpreter.fromFile(file);
       
-      setState(() => statusMessage = "Lettura etichette...");
+      setState(() => statusMessage = "Lettura labels...");
       final labelData = await rootBundle.loadString('assets/labels.txt');
       _labels = labelData.split('\n').where((s) => s.isNotEmpty).toList();
 
-      setState(() =>
+      setState(() => statusMessage = "Avvio Camera...");
+      controller = CameraController(_cameras[0], ResolutionPreset.medium);
+      await controller!.initialize();
+      
+      if (!mounted) return;
+      setState(() => statusMessage = "Pronto!");
+    } catch (e) {
+      setState(() => statusMessage = "ERRORE:\n$e");
+    }
+  }
+
+  @override
+  void dispose() {
+    controller?.dispose();
+    _interpreter?.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller == null || !controller!.value.isInitialized) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 20),
+              Text(statusMessage, textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      );
+    }
+    return Scaffold(
+      body: Stack(
+        children: [
+          CameraPreview(controller!),
+          Positioned(
+            bottom: 30, left: 20, right: 20,
+            child: Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(10)),
+              child: Text(
+                "IA ATTIVA\nClassi caricate: ${_labels?.length ?? 0}",
+                style: const TextStyle(color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
