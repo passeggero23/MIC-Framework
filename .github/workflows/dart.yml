@@ -19,30 +19,24 @@ jobs:
 
       - name: Force IA Library Injection
         run: |
-          # 1. Ricrea solo la cartella Android per pulizia totale
           flutter create repair_temp --project-name mic_app --platforms android
           rm -rf android
           mv repair_temp/android .
           rm -rf repair_temp
 
-          # 2. Imposta minSdkVersion 26 (Necessario per Flex Ops)
           sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 26/' android/app/build.gradle
+          sed -i '/android {/a\    aaptOptions {\n        noCompress "tflite"\n    }' android/app/build.gradle
 
-          # 3. Aggiungi noCompress per i file .tflite per evitare corruzioni
-          sed -i '/android {/a\    aaptOptions { noCompress "tflite" }' android/app/build.gradle
-
-          # 4. Inietta le dipendenze TensorFlow nel blocco corretto
           cat <<'EOF' >> android/app/build.gradle
-
 dependencies {
-    implementation "org.tensorflow:tensorflow-lite:2.14.0"
-    implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"
+  implementation "org.tensorflow:tensorflow-lite:2.14.0"
+  implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"
 }
 EOF
 
       - name: Inject Camera Permissions
         run: |
-          sed -i '/<application/i\    <uses-permission android:name="android.permission.CAMERA" />' android/app/src/main/AndroidManifest.xml
+          sed -i '/<application/i\    <uses-permission android:name="android.permission.CAMERA"/>' android/app/src/main/AndroidManifest.xml
 
       - name: Build APK
         run: |
@@ -50,7 +44,4 @@ EOF
           flutter build apk --release
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+        uses: actions/upload
