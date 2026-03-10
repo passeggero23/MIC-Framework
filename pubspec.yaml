@@ -1,20 +1,23 @@
 name: mic_app
-description: AI Recognition App
+description: "A new Flutter project."
+publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: '>=3.2.3 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  camera: ^0.10.5
-  tflite_flutter: ^0.10.1
-  permission_handler: ^11.0.0
+  camera: ^0.10.5+5
+  tflite_flutter: 0.10.4
+  permission_handler: ^11.3.0
+  path_provider: ^2.1.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
