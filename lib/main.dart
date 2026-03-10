@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 
 late List<CameraDescription> _cameras;
 
@@ -35,13 +38,19 @@ class _MicAIAppState extends State<MicAIApp> {
 
   Future<void> _initializeEngine() async {
     try {
-      setState(() => statusMessage = "Caricamento Modello (6.55MB)...");
-      // Lettura tramite Buffer per massima stabilità
-      final modelData = await DefaultAssetBundle.of(context).load('assets/model.tflite');
-      _interpreter = Interpreter.fromBuffer(modelData.buffer.asUint8List());
+      setState(() => statusMessage = "Preparazione file IA...");
+      
+      // Metodo Avanzato: Copiamo l'asset in un file reale per evitare errori di buffer
+      final byteData = await rootBundle.load('assets/model.tflite');
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/temp_model.tflite');
+      await file.writeAsBytes(byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
+
+      setState(() => statusMessage = "Caricamento Interprete...");
+      _interpreter = Interpreter.fromFile(file);
       
       setState(() => statusMessage = "Caricamento Label...");
-      final labelData = await DefaultAssetBundle.of(context).loadString('assets/labels.txt');
+      final labelData = await rootBundle.loadString('assets/labels.txt');
       _labels = labelData.split('\n');
 
       setState(() => statusMessage = "Avvio Camera...");
@@ -51,7 +60,7 @@ class _MicAIAppState extends State<MicAIApp> {
       if (!mounted) return;
       setState(() => statusMessage = "Pronto!");
     } catch (e) {
-      setState(() => statusMessage = "ERRORE FORMATO:\n${e.toString()}");
+      setState(() => statusMessage = "ERRORE TECNICO:\n${e.toString()}");
     }
   }
 
@@ -72,7 +81,10 @@ class _MicAIAppState extends State<MicAIApp> {
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: 20),
-              Text(statusMessage, textAlign: TextAlign.center),
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(statusMessage, textAlign: TextAlign.center),
+              ),
             ],
           ),
         ),
@@ -84,9 +96,7 @@ class _MicAIAppState extends State<MicAIApp> {
         children: [
           CameraPreview(controller!),
           Positioned(
-            bottom: 50,
-            left: 20,
-            right: 20,
+            bottom: 50, left: 20, right: 20,
             child: Container(
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(10)),
