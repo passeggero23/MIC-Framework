@@ -17,7 +17,7 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      - name: Force IA Library & SDK Fix
+      - name: Force IA Library & SDK 21 Fix
         run: |
           # 1. Reset pulito della cartella Android
           flutter create repair_temp --project-name mic_app --platforms android
@@ -25,13 +25,13 @@ jobs:
           mv repair_temp/android .
           rm -rf repair_temp
 
-          # 2. Imposta minSdkVersion 21 (Risolve errore log #252)
+          # 2. Imposta minSdkVersion 21 (Risolve l'errore del plugin camera)
           sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/' android/app/build.gradle
 
-          # 3. Configurazione NoCompress per stabilità modello
+          # 3. Configurazione NoCompress per evitare corruzioni del modello IA
           sed -i '/android {/a \    aaptOptions { noCompress "tflite" }' android/app/build.gradle
 
-          # 4. Iniezione dipendenze TensorFlow (Select-Ops)
+          # 4. Iniezione TensorFlow Lite + Select Ops (Necessarie per il tuo modello)
           cat <<'EOF' >> android/app/build.gradle
           dependencies {
               implementation "org.tensorflow:tensorflow-lite:2.14.0"
@@ -52,4 +52,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app
