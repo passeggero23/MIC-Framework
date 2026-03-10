@@ -2,52 +2,64 @@ name: Flutter Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.0'
-          channel: 'stable'
+          flutter-version: "3.19.0"
+          channel: stable
+          cache: true
 
-      - name: Rebuild Android & Fix SDK 21
+      - name: Flutter doctor
+        run: flutter doctor -v
+
+      - name: Rebuild Android and force minSdk 21
         run: |
-          # 1. Reset pulito della struttura Android
           flutter create repair_temp --project-name mic_app --platforms android
           rm -rf android
           mv repair_temp/android .
           rm -rf repair_temp
 
-          # 2. Forza minSdkVersion 21 (Richiesto dal plugin camera - Log #252)
-          sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' android/app/build.gradle
-          echo "flutter.minSdkVersion=21" >> android/local.properties
+          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 21/g' android/app/build.gradle
 
-          # 3. No compress per i modelli TensorFlow
-          sed -i '/android {/a \    aaptOptions { noCompress "tflite" }' android/app/build.gradle
+          sed -i '/android {/a\    aaptOptions { noCompress "tflite" }' android/app/build.gradle
 
-          # 4. Iniezione dipendenze IA (Corretto per Log #256)
           cat <<EOF >> android/app/build.gradle
+
           dependencies {
               implementation "org.tensorflow:tensorflow-lite:2.14.0"
               implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"
           }
           EOF
 
-      - name: Inject Camera Permissions
+      - name: Inject camera permission
         run: |
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA"/>' android/app/src/main/AndroidManifest.xml
+          sed -i '/<application/i\    <uses-permission android:name="android.permission.CAMERA"/>' android/app/src/main/AndroidManifest.xml
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Clean project
+        run: flutter clean
 
       - name: Build APK
-        run: |
-          flutter pub get
-          flutter build apk --release
+        run: flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
