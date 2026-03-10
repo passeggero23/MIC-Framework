@@ -17,22 +17,22 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      - name: Rebuild Android & Fix SDK
+      - name: Rebuild Android & Fix SDK 21
         run: |
-          # 1. Pulizia e rigenerazione struttura Android
+          # 1. Reset pulito della struttura Android
           flutter create repair_temp --project-name mic_app --platforms android
           rm -rf android
           mv repair_temp/android .
           rm -rf repair_temp
 
-          # 2. Forza minSdkVersion 21 in TUTTI i punti necessari (Risolve Log #252)
+          # 2. Forza minSdkVersion 21 (Richiesto dal plugin camera - Log #252)
           sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' android/app/build.gradle
           echo "flutter.minSdkVersion=21" >> android/local.properties
 
-          # 3. Configurazione No-Compress per TensorFlow
+          # 3. No compress per i modelli TensorFlow
           sed -i '/android {/a \    aaptOptions { noCompress "tflite" }' android/app/build.gradle
 
-          # 4. Iniezione dipendenze IA (Sintassi YAML corretta)
+          # 4. Iniezione dipendenze IA (Corretto per Log #256)
           cat <<EOF >> android/app/build.gradle
           dependencies {
               implementation "org.tensorflow:tensorflow-lite:2.14.0"
