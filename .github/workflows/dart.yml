@@ -7,7 +7,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -17,26 +16,31 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      - name: Force IA Library Injection
+      - name: Fix Android & IA Libraries
         run: |
+          # 1. Pulizia totale
           flutter create repair_temp --project-name mic_app --platforms android
           rm -rf android
           mv repair_temp/android .
           rm -rf repair_temp
 
+          # 2. Upgrade SDK a 26 (Minimo per IA)
           sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 26/' android/app/build.gradle
-          sed -i '/android {/a\    aaptOptions {\n        noCompress "tflite"\n    }' android/app/build.gradle
 
+          # 3. NoCompress per il file .tflite
+          sed -i '/android {/a\    aaptOptions { noCompress "tflite" }' android/app/build.gradle
+
+          # 4. Iniezione pulita TensorFlow
           cat <<'EOF' >> android/app/build.gradle
 dependencies {
-  implementation "org.tensorflow:tensorflow-lite:2.14.0"
-  implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"
+    implementation "org.tensorflow:tensorflow-lite:2.14.0"
+    implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"
 }
 EOF
 
-      - name: Inject Camera Permissions
+      - name: Inject Permissions
         run: |
-          sed -i '/<application/i\    <uses-permission android:name="android.permission.CAMERA"/>' android/app/src/main/AndroidManifest.xml
+          sed -i '/<application/i\    <uses-permission android:name="android.permission.CAMERA" />' android/app/src/main/AndroidManifest.xml
 
       - name: Build APK
         run: |
@@ -44,4 +48,7 @@ EOF
           flutter build apk --release
 
       - name: Upload APK
-        uses: actions/upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
