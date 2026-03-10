@@ -18,18 +18,19 @@ jobs:
 
       - name: Surgical Repair & Select-Ops Support
         run: |
-          # 1. Rigenerazione struttura
+          # 1. Rigenerazione struttura pulita
           flutter create repair_temp --project-name mic_app --platforms android
           cp -r repair_temp/android .
           rm -rf repair_temp
           
-          # 2. Upgrade SDK a 26
+          # 2. Upgrade SDK a 26 (Necessario per log 1000046934)
           sed -i 's/minSdkVersion .*/minSdkVersion 26/g' android/app/build.gradle
           
-          # 3. Configurazione Progetto per Teachable Machine
+          # 3. No-Compress per il modello pesante (6.55MB visto in 1000046980)
           sed -i '/android {/a \    aaptOptions { noCompress "tflite" }' android/app/build.gradle
           
-          # 4. Iniezione pulita delle dipendenze TensorFlow (Correzione log 1000046997)
+          # 4. Iniezione corretta delle dipendenze IA (Correzione per log 1000047000)
+          # Inseriamo le righe DOPO l'apertura del blocco dependencies
           sed -i '/dependencies {/a \    implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"' android/app/build.gradle
           sed -i '/dependencies {/a \    implementation "org.tensorflow:tensorflow-lite:2.14.0"' android/app/build.gradle
 
