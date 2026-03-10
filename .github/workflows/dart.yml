@@ -2,52 +2,52 @@ name: Flutter Build
 
 on:
   push:
-    branches: ["main"]
-  workflow_dispatch:
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
+      - uses: actions/checkout@v4
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.19.0"
-          channel: stable
-          cache: true
+          flutter-version: '3.19.0'
+          channel: 'stable'
 
-      # ✅ CREA LA CARTELLA ANDROID SE NON ESISTE
-      - name: Ensure Android folder exists
+      - name: Rebuild Android & Fix SDK 21
         run: |
-          if [ ! -d "android" ]; then
-            flutter create .
-          fi
+          # Pulizia e reset struttura Android
+          flutter create repair_temp --project-name mic_app --platforms android
+          rm -rf android
+          mv repair_temp/android .
+          rm -rf repair_temp
 
-      # ✅ FORZA minSdk 21
-      - name: Force minSdk 21
-        run: |
-          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 21/g' android/app/build.gradle
-          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
+          # Forza minSdkVersion 21 (Risolve Log #252)
           sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' android/app/build.gradle
+          echo "flutter.minSdkVersion=21" >> android/local.properties
 
-      - name: Flutter clean
-        run: flutter clean
+          # Configurazione No-Compress per TensorFlow
+          sed -i '/android {/a \    aaptOptions { noCompress "tflite" }' android/app/build.gradle
 
-      - name: Get dependencies
-        run: flutter pub get
+          # Iniezione dipendenze IA (Corretto per Log #256)
+          cat <<EOF >> android/app/build.gradle
+          dependencies {
+              implementation "org.tensorflow:tensorflow-lite:2.14.0"
+              implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"
+          }
+          EOF
+
+      - name: Inject Camera Permissions
+        run: |
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA"/>' android/app/src/main/AndroidManifest.xml
 
       - name: Build APK
-        run: flutter build apk --release
+        run: |
+          flutter pub get
+          flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
