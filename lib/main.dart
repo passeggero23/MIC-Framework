@@ -12,10 +12,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Permission.camera.request();
   _cameras = await availableCameras();
-  runApp(MaterialApp(
-    home: MicAIApp(),
-    debugShowCheckedModeBanner: false,
-  ));
+  runApp(const MaterialApp(home: MicAIApp(), showErrorGrid: false));
 }
 
 class MicAIApp extends StatefulWidget {
@@ -38,29 +35,29 @@ class _MicAIAppState extends State<MicAIApp> {
 
   Future<void> _initializeEngine() async {
     try {
-      setState(() => statusMessage = "Preparazione file IA...");
-      
-      // Metodo Avanzato: Copiamo l'asset in un file reale per evitare errori di buffer
+      setState(() => statusMessage = "Estrazione modello...");
       final byteData = await rootBundle.load('assets/model.tflite');
       final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/temp_model.tflite');
-      await file.writeAsBytes(byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
+      final file = File('${directory.path}/model.tflite');
+      await file.writeAsBytes(byteData.buffer.asUint8List());
 
-      setState(() => statusMessage = "Caricamento Interprete...");
-      _interpreter = Interpreter.fromFile(file);
+      setState(() => statusMessage = "Caricamento IA...");
+      // Carichiamo con opzioni standard per Teachable Machine
+      var options = InterpreterOptions();
+      _interpreter = Interpreter.fromFile(file, options: options);
       
-      setState(() => statusMessage = "Caricamento Label...");
+      setState(() => statusMessage = "Lettura etichette...");
       final labelData = await rootBundle.loadString('assets/labels.txt');
-      _labels = labelData.split('\n');
+      _labels = labelData.split('\n').where((s) => s.isNotEmpty).toList();
 
-      setState(() => statusMessage = "Avvio Camera...");
+      setState(() => statusMessage = "Accensione Camera...");
       controller = CameraController(_cameras[0], ResolutionPreset.medium);
       await controller!.initialize();
       
       if (!mounted) return;
       setState(() => statusMessage = "Pronto!");
     } catch (e) {
-      setState(() => statusMessage = "ERRORE TECNICO:\n${e.toString()}");
+      setState(() => statusMessage = "ERRORE:\n$e");
     }
   }
 
@@ -81,28 +78,24 @@ class _MicAIAppState extends State<MicAIApp> {
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Text(statusMessage, textAlign: TextAlign.center),
-              ),
+              Text(statusMessage, textAlign: TextAlign.center),
             ],
           ),
         ),
       );
     }
-
     return Scaffold(
       body: Stack(
         children: [
           CameraPreview(controller!),
           Positioned(
-            bottom: 50, left: 20, right: 20,
+            bottom: 30, left: 20, right: 20,
             child: Container(
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(10)),
               child: Text(
-                "IA MIC ATTIVA\nModello: ${_labels?.length ?? 0} classi",
-                style: const TextStyle(color: Colors.white, fontSize: 16),
+                "IA ATTIVA\nClassi caricate: ${_labels?.length ?? 0}",
+                style: const TextStyle(color: Colors.white),
                 textAlign: TextAlign.center,
               ),
             ),
