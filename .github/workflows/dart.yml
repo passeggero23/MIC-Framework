@@ -17,14 +17,19 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      - name: Force IA Library Injection
+      - name: Rebuild Android + Fix SDK
         run: |
           flutter create repair_temp --project-name mic_app --platforms android
           rm -rf android
           mv repair_temp/android .
           rm -rf repair_temp
 
+          # Forza minSdkVersion 26 in TUTTI i punti necessari
           sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 26/' android/app/build.gradle
+          sed -i 's/android:minSdkVersion="[0-9]\+"/android:minSdkVersion="26"/' android/app/src/main/AndroidManifest.xml
+          echo "flutter.minSdkVersion=26" >> android/gradle.properties
+
+          # No compress per TensorFlow Lite
           sed -i '/android {/a\    aaptOptions {\n        noCompress "tflite"\n    }' android/app/build.gradle
 
 cat <<'EOF' >> android/app/build.gradle
