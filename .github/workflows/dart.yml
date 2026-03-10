@@ -11,7 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Manca nel tuo: Java 17 è obbligatorio per Flutter Android builds
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -24,31 +23,36 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      - name: Fix minSdkVersion to 21 (Camera requirement)
+      # FIX CRITICO: Genera la cartella android se manca (come nel tuo repo)
+      - name: Generate Android project
         run: |
-          # Fix robusto che funziona con build.gradle standard
-          sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' android/app/build.gradle
-          sed -i 's/minSdk = [0-9]\+/minSdk = 21/g' android/app/build.gradle.kts 2>/dev/null || true
+          if [ ! -d "android/app" ]; then
+            echo "⚠️ Android folder missing, generating..."
+            flutter create --platforms android .
+          fi
+
+      - name: Fix minSdkVersion to 21
+        run: |
+          if [ -f "android/app/build.gradle" ]; then
+            sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' android/app/build.gradle
+          elif [ -f "android/app/build.gradle.kts" ]; then
+            sed -i 's/minSdk = [0-9]\+/minSdk = 21/g' android/app/build.gradle.kts
+          fi
 
       - name: Add TensorFlow Lite dependencies
         run: |
           BUILD_FILE="android/app/build.gradle"
-          
-          # Aggiungi solo se non esistono già
-          if ! grep -q "tensorflow-lite" $BUILD_FILE; then
-            # Inserisce nel blocco dependencies esistente
+          if [ -f "$BUILD_FILE" ] && ! grep -q "tensorflow-lite" $BUILD_FILE; then
             sed -i '/dependencies {/a \    implementation "org.tensorflow:tensorflow-lite:2.14.0"\n    implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"' $BUILD_FILE
           fi
-          
-          # Fix noCompress tflite (evita compressione modelli)
-          if ! grep -q 'noCompress "tflite"' $BUILD_FILE; then
+          if [ -f "$BUILD_FILE" ] && ! grep -q 'noCompress "tflite"' $BUILD_FILE; then
             sed -i '/android {/a \    aaptOptions { noCompress "tflite" }' $BUILD_FILE
           fi
 
       - name: Check Camera Permission
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
-          if ! grep -q "android.permission.CAMERA" "$MANIFEST"; then
+          if [ -f "$MANIFEST" ] && ! grep -q "android.permission.CAMERA" "$MANIFEST"; then
             sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA"/>' "$MANIFEST"
           fi
 
