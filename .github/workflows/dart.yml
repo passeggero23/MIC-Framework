@@ -17,7 +17,7 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      - name: Force IA Library Injection
+      - name: Force IA Library & SDK Fix
         run: |
           # 1. Reset pulito della cartella Android
           flutter create repair_temp --project-name mic_app --platforms android
@@ -25,13 +25,13 @@ jobs:
           mv repair_temp/android .
           rm -rf repair_temp
 
-          # 2. Upgrade SDK a 26 (Fondamentale per i modelli pesanti)
-          sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 26/' android/app/build.gradle
+          # 2. Imposta minSdkVersion 21 (Risolve errore log #252)
+          sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/' android/app/build.gradle
 
-          # 3. Configurazione NoCompress per .tflite
+          # 3. Configurazione NoCompress per stabilità modello
           sed -i '/android {/a \    aaptOptions { noCompress "tflite" }' android/app/build.gradle
 
-          # 4. Iniezione dipendenze IA (Corretto il posizionamento)
+          # 4. Iniezione dipendenze TensorFlow (Select-Ops)
           cat <<'EOF' >> android/app/build.gradle
           dependencies {
               implementation "org.tensorflow:tensorflow-lite:2.14.0"
