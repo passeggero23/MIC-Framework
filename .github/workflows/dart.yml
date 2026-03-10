@@ -30,34 +30,26 @@ jobs:
             flutter create --platforms android --project-name mic_app .
           fi
 
-      - name: Configure Android build.gradle
+      - name: Fix minSdkVersion to 21
         run: |
-          BUILD_FILE="android/app/build.gradle"
-          
-          # Fix minSdkVersion
-          sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' "$BUILD_FILE"
-          
-          # Fix noCompress tflite
-          if ! grep -q 'noCompress "tflite"' "$BUILD_FILE"; then
-            sed -i '/android {/a \    aaptOptions { noCompress "tflite" }' "$BUILD_FILE"
-          fi
-          
-          # Add TensorFlow dependencies (crea blocco dependencies se non esiste)
-          if ! grep -q "tensorflow-lite" "$BUILD_FILE"; then
-            if grep -q "^dependencies {" "$BUILD_FILE"; then
-              # Inserisci prima della chiusura del blocco dependencies
-              sed -i '/^dependencies {/,/^}/{ /^}/i\    implementation "org.tensorflow:tensorflow-lite:2.14.0"\n    implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"
-}' "$BUILD_FILE"
-            else
-              # Aggiungi blocco nuovo alla fine
-              cat >> "$BUILD_FILE" << 'EOF'
+          sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' android/app/build.gradle
 
-dependencies {
-    implementation "org.tensorflow:tensorflow-lite:2.14.0"
-    implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"
-}
-EOF
-            fi
+      - name: Add TensorFlow Lite dependencies
+        run: |
+          # Aggiungi dipendenze alla fine del file, fuori da altri blocchi
+          echo "" >> android/app/build.gradle
+          echo "dependencies {" >> android/app/build.gradle
+          echo '    implementation "org.tensorflow:tensorflow-lite:2.14.0"' >> android/app/build.gradle
+          echo '    implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"' >> android/app/build.gradle
+          echo "}" >> android/app/build.gradle
+
+      - name: Add noCompress for tflite
+        run: |
+          # Aggiungi aaptOptions dentro il blocco android se non esiste
+          if ! grep -q 'noCompress "tflite"' android/app/build.gradle; then
+            # Sostituisci la riga 'android {' con 'android { aaptOptions... }'
+            # Ma meglio usare sed per inserire dopo 'android {'
+            sed -i '/^android {/a \    aaptOptions { noCompress "tflite" }' android/app/build.gradle
           fi
 
       - name: Build APK
