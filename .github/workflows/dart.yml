@@ -16,24 +16,24 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      - name: Fix Android & IA Support
+      - name: Surgical Fix Android
         run: |
-          # Rigenerazione struttura pulita
+          # Rigenerazione cartella android per pulizia
           flutter create repair_temp --project-name mic_app --platforms android
           cp -r repair_temp/android .
           rm -rf repair_temp
           
-          # Configurazione SDK e compressione TFLite
+          # Configurazione SDK e compressione
           sed -i 's/minSdkVersion .*/minSdkVersion 26/g' android/app/build.gradle
           sed -i '/android {/a \    aaptOptions { noCompress "tflite" }' android/app/build.gradle
           
-          # Inserimento dipendenze in fondo al file per evitare errori di blocco
+          # Inserimento dipendenze IA (Risolve errori visti in 1000047003)
           echo 'dependencies { 
             implementation "org.tensorflow:tensorflow-lite:2.14.0"
             implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"
           }' >> android/app/build.gradle
 
-      - name: Inject Permissions
+      - name: Inject Camera Permissions
         run: |
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' android/app/src/main/AndroidManifest.xml
 
