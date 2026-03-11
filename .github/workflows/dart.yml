@@ -1,5 +1,5 @@
-concurrency:
-  name: Flutter Build
+name: Flutter Build
+
 on:
   push:
     branches: [ "main" ]
@@ -9,17 +9,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.0'
 
-      - name: Rinominazione e Hard Reset
+      - name: Hard Reset and Rename
         run: |
-          # Forza il nuovo nome su tutto il progetto
+          # Elimina la vecchia configurazione Android
+          rm -rf android
+          # Rigenera tutto con il nome corretto cercato dal codice
           flutter create . --project-name mic_app --overwrite --platforms android
-          
-          # Fix SDK 21 per la fotocamera
+          # Fix SDK 21 richiesto dalla camera
           sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' android/app/build.gradle
 
       - name: Build APK
