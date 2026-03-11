@@ -1,35 +1,24 @@
-import 'package:flutter/material.dart';
-import 'package:mic_app/pages/home_page.dart';
-import 'package:mic_app/features/dashboard/presentation/dashboard_page.dart';
-import 'package:mic_app/pages/settings_page.dart';
+name: Flutter Build
+on:
+  push:
+    branches: [ "main" ]
 
-class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
-  @override
-  State<MainNavigation> createState() => _MainNavigationState();
-}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
 
-class _MainNavigationState extends State<MainNavigation> {
-  int _selectedIndex = 0;
-  final List<Widget> _pages = [
-    const HomePage(),
-    const DashboardPage(),
-    const SettingsPage(),
-  ];
+      - name: Hard Reset and Rename
+        run: |
+          rm -rf android
+          flutter create . --project-name mic_app --overwrite --platforms android
+          sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' android/app/build.gradle
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
-        ],
-      ),
-    );
-  }
-}
+      - name: Build APK
+        run: |
+          flutter pub get
+          flutter build apk --release
