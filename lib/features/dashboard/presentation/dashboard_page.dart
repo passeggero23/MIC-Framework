@@ -24,7 +24,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> _initEngine() async {
     try {
-      // Caricamento modello IA
+      // 1. Caricamento modello IA dagli assets
       final data = await rootBundle.load('assets/model.tflite');
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/model.tflite');
@@ -32,7 +32,7 @@ class _DashboardPageState extends State<DashboardPage> {
       
       _interpreter = Interpreter.fromFile(file);
       
-      // Inizializzazione Camera
+      // 2. Inizializzazione Camera
       final cameras = await availableCameras();
       if (cameras.isEmpty) throw Exception("Nessuna camera trovata");
       
@@ -47,19 +47,32 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Se la camera non è pronta, mostra lo stato
     if (_controller == null || !_controller!.value.isInitialized) {
-      return Scaffold(body: Center(child: Text(_status)));
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: Text(_status, style: const TextStyle(color: Colors.white))),
+      );
     }
     return Scaffold(
+      appBar: AppBar(title: const Text("AI Dashboard"), backgroundColor: Colors.transparent),
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           CameraPreview(_controller!),
           Positioned(
-            top: 40, left: 20,
+            bottom: 30, left: 20, right: 20,
             child: Container(
-              padding: const EdgeInsets.all(8),
-              color: Colors.black54,
-              child: Text(_status, style: const TextStyle(color: Colors.white)),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                _status, 
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+              ),
             ),
           ),
         ],
