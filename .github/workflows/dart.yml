@@ -1,5 +1,5 @@
-name: Flutter Build
-
+concurrency:
+  name: Flutter Build
 on:
   push:
     branches: [ "main" ]
@@ -7,54 +7,22 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.0'
-          channel: 'stable'
 
-      - name: Generate Android project
+      - name: Rinominazione e Hard Reset
         run: |
-          if [ ! -d "android/app" ]; then
-            flutter config --no-analytics
-            flutter create --platforms android --project-name mic_app .
-          fi
-
-      - name: Fix minSdkVersion to 21
-        run: |
+          # Forza il nuovo nome su tutto il progetto
+          flutter create . --project-name mic_app --overwrite --platforms android
+          
+          # Fix SDK 21 per la fotocamera
           sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' android/app/build.gradle
-
-      - name: Add TensorFlow Lite dependencies
-        run: |
-          echo "" >> android/app/build.gradle
-          echo "dependencies {" >> android/app/build.gradle
-          echo '    implementation "org.tensorflow:tensorflow-lite:2.14.0"' >> android/app/build.gradle
-          echo '    implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0"' >> android/app/build.gradle
-          echo "}" >> android/app/build.gradle
-
-      - name: Add noCompress for tflite
-        run: |
-          if ! grep -q 'noCompress "tflite"' android/app/build.gradle; then
-            sed -i '/^android {/a \    aaptOptions { noCompress "tflite" }' android/app/build.gradle
-          fi
 
       - name: Build APK
         run: |
           flutter pub get
           flutter build apk --release
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
