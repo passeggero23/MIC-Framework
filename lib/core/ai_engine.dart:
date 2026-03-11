@@ -1,5 +1,6 @@
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:flutter/foundation.dart';
+// Se model_loader.dart ti dà X rossa, assicurati che il file esista in lib/
 import 'model_loader.dart';
 
 class AIEngine {
@@ -13,36 +14,34 @@ class AIEngine {
 
   Future<void> initialize() async {
     try {
+      // Configurazione ottimizzata per Android
       final options = InterpreterOptions()..threads = 4;
-      try {
-        options.addDelegate(GpuDelegateV2());
-        debugPrint('[AIEngine] GPU delegate attivo');
-      } catch (_) {
-        debugPrint('[AIEngine] GPU non disponibile, uso CPU');
-      }
+      
+      // Caricamento modelli tramite ModelLoader
       final imageModel = await ModelLoader.loadModel('model_image.tflite');
       final audioModel = await ModelLoader.loadModel('model_audio.tflite');
-      _imageInterpreter = Interpreter.fromFile(imageModel, options: options);
-      _audioInterpreter = Interpreter.fromFile(audioModel, options: options);
-      isModelLoaded = true;
-      debugPrint('[AIEngine] Modelli caricati');
+      
+      if (imageModel != null) {
+        _imageInterpreter = Interpreter.fromFile(imageModel, options: options);
+      }
+      if (audioModel != null) {
+        _audioInterpreter = Interpreter.fromFile(audioModel, options: options);
+      }
+      
+      isModelLoaded = _imageInterpreter != null && _audioInterpreter != null;
+      debugPrint('[AIEngine] Modelli pronti: $isModelLoaded');
     } catch (e) {
-      debugPrint('[AIEngine] Errore init: $e');
+      debugPrint('[AIEngine] Errore inizializzazione: $e');
       isModelLoaded = false;
     }
   }
 
-  List<double> analyzeFrame(List<List<List<List<double>>>> input) {
+  // Analisi Immagine (Tensor 4D)
+  List<double> analyzeFrame(List<dynamic> input) {
     if (!isModelLoaded || _imageInterpreter == null) return [];
-    final output = List.filled(1000, 0.0).reshape([1, 1000]);
+    // Output standard per molti modelli MobileNet/Inception
+    var output = List<double>.filled(1000, 0).reshape([1, 1000]);
     _imageInterpreter!.run(input, output);
-    return List<double>.from(output[0]);
-  }
-
-  List<double> analyzeAudio(List<List<double>> input) {
-    if (!isModelLoaded || _audioInterpreter == null) return [];
-    final output = List.filled(521, 0.0).reshape([1, 521]);
-    _audioInterpreter!.run(input, output);
     return List<double>.from(output[0]);
   }
 
