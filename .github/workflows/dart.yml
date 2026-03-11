@@ -22,3 +22,9 @@ jobs:
         run: |
           flutter pub get
           flutter build apk --release
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mic_app_release
+          path: build/app/outputs/flutter-apk/app-release.apk
