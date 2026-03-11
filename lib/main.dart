@@ -1,20 +1,15 @@
-import 'package:flutter/material.dart';
-import 'package:mic_app/main_navigation.dart';
+// Il file si chiama mic_app (minuscolo)
+// Ma la classe si chiama MicApp (maiuscolo)
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
-}
+class MicApp extends StatelessWidget {
+  const MicApp({super.key});
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MIC Framework',
-      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
-      home: const MainNavigation(),
-      debugShowCheckedModeBanner: false,
+      title: 'MIC APP', // Questo è il nome che apparirà sul telefono
+      theme: ThemeData(useMaterial3: true),
+      home: const MainNavigation(), // Qui colleghiamo la tua vera navigazione
     );
   }
 }
