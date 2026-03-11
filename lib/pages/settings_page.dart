@@ -7,7 +7,7 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: Text('Impostazioni Sistema'),
+        child: Text('MIC APP - SETTINGS'),
       ),
     );
   }
