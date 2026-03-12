@@ -18,12 +18,12 @@ jobs:
           cp -r assets /tmp/assets_backup
           cp pubspec.yaml /tmp/pubspec_backup.yaml
 
-      - name: Regenerate Android folder only
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.0'
 
-      - name: Setup Flutter
+      - name: Regenerate Android folder
         run: |
           rm -rf android
           flutter create . --project-name mic_app --overwrite --platforms android
@@ -35,11 +35,27 @@ jobs:
           cp -r /tmp/assets_backup assets
           cp /tmp/pubspec_backup.yaml pubspec.yaml
 
-      - name: Fix build.gradle
+      - name: Fix build.gradle with Python
         run: |
-          sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' android/app/build.gradle
-          sed -i 's/compileSdkVersion [0-9]\+/compileSdkVersion 34/g' android/app/build.gradle
-          sed -i 's/targetSdkVersion [0-9]\+/targetSdkVersion 34/g' android/app/build.gradle
+          python3 - <<'EOF'
+          import re
+
+          path = 'android/app/build.gradle'
+          with open(path, 'r') as f:
+              content = f.read()
+
+          content = re.sub(r'minSdk\s+\d+', 'minSdk 21', content)
+          content = re.sub(r'minSdkVersion\s+\d+', 'minSdkVersion 21', content)
+          content = re.sub(r'compileSdk\s+\d+', 'compileSdk 34', content)
+          content = re.sub(r'compileSdkVersion\s+\d+', 'compileSdkVersion 34', content)
+          content = re.sub(r'targetSdk\s+\d+', 'targetSdk 34', content)
+          content = re.sub(r'targetSdkVersion\s+\d+', 'targetSdkVersion 34', content)
+
+          with open(path, 'w') as f:
+              f.write(content)
+
+          print("build.gradle patched successfully")
+          EOF
 
       - name: Fix tflite_flutter version
         run: |
@@ -54,4 +70,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mic_app_release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs
