@@ -1,4 +1,5 @@
 name: Flutter Build
+
 on:
   push:
     branches: [ "main" ]
@@ -6,24 +7,50 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Backup lib and assets
+        run: |
+          cp -r lib /tmp/lib_backup
+          cp -r assets /tmp/assets_backup
+          cp pubspec.yaml /tmp/pubspec_backup.yaml
+
+      - name: Regenerate Android folder only
+        uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.0'
 
-      - name: Hard Reset and Rename
+      - name: Setup Flutter
         run: |
           rm -rf android
           flutter create . --project-name mic_app --overwrite --platforms android
+
+      - name: Restore original lib and assets
+        run: |
+          rm -rf lib assets
+          cp -r /tmp/lib_backup lib
+          cp -r /tmp/assets_backup assets
+          cp /tmp/pubspec_backup.yaml pubspec.yaml
+
+      - name: Fix build.gradle
+        run: |
           sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 21/g' android/app/build.gradle
+          sed -i 's/compileSdkVersion [0-9]\+/compileSdkVersion 34/g' android/app/build.gradle
+          sed -i 's/targetSdkVersion [0-9]\+/targetSdkVersion 34/g' android/app/build.gradle
+
+      - name: Fix tflite_flutter version
+        run: |
+          sed -i 's/tflite_flutter: \^0\.10\.0/tflite_flutter: ^0.10.4/g' pubspec.yaml
 
       - name: Build APK
         run: |
           flutter pub get
           flutter build apk --release
 
-      - name: Upload Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: mic_app_release
