@@ -35,14 +35,52 @@ jobs:
           cp -r /tmp/assets_backup assets
           cp /tmp/pubspec_backup.yaml pubspec.yaml
 
-      - name: Fix minSdk in build.gradle
+      - name: Write clean build.gradle
         run: |
-          sed -i 's/minSdk [0-9]*/minSdk 21/' android/app/build.gradle
-          sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/' android/app/build.gradle
+          cat > android/app/build.gradle << 'EOF'
+          plugins {
+              id "com.android.application"
+              id "kotlin-android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+
+          android {
+              namespace "com.mic.framework"
+              compileSdk 34
+              ndkVersion flutter.ndkVersion
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+
+              kotlinOptions {
+                  jvmTarget = "1.8"
+              }
+
+              defaultConfig {
+                  applicationId "com.mic.framework"
+                  minSdk 21
+                  targetSdk 34
+                  versionCode flutter.versionCode
+                  versionName flutter.versionName
+              }
+
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.debug
+                  }
+              }
+          }
+
+          flutter {
+              source "../.."
+          }
+          EOF
 
       - name: Write clean AndroidManifest.xml
         run: |
-          cat > android/app/src/main/AndroidManifest.xml << 'ENDOFMANIFEST'
+          cat > android/app/src/main/AndroidManifest.xml << 'EOF'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
               xmlns:tools="http://schemas.android.com/tools">
               <uses-sdk tools:overrideLibrary="io.flutter.plugins.camera"/>
@@ -72,7 +110,7 @@ jobs:
                       android:value="2"/>
               </application>
           </manifest>
-          ENDOFMANIFEST
+          EOF
 
       - name: Build APK
         run: |
