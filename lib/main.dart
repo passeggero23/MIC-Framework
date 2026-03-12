@@ -1,5 +1,9 @@
-// Il file si chiama mic_app (minuscolo)
-// Ma la classe si chiama MicApp (maiuscolo)
+import 'package:flutter/material.dart';
+import 'package:mic_app/main_navigation.dart';
+
+void main() {
+  runApp(const MicApp());
+}
 
 class MicApp extends StatelessWidget {
   const MicApp({super.key});
@@ -7,9 +11,9 @@ class MicApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MIC APP', // Questo è il nome che apparirà sul telefono
+      title: 'MIC APP',
       theme: ThemeData(useMaterial3: true),
-      home: const MainNavigation(), // Qui colleghiamo la tua vera navigazione
+      home: const MainNavigation(),
     );
   }
 }
