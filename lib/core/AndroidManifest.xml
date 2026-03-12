@@ -1,15 +1,87 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.CAMERA" />
-    <application
-        android:label="MIC App"
-        android:icon="@mipmap/ic_launcher">
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-    </application>
-</manifest>
+name: Flutter Build
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Backup lib and assets
+        run: |
+          cp -r lib /tmp/lib_backup
+          cp -r assets /tmp/assets_backup
+          cp pubspec.yaml /tmp/pubspec_backup.yaml
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+
+      - name: Regenerate Android folder
+        run: |
+          rm -rf android
+          flutter create . --project-name mic_app --overwrite --platforms android
+
+      - name: Restore original lib and assets
+        run: |
+          rm -rf lib assets
+          cp -r /tmp/lib_backup lib
+          cp -r /tmp/assets_backup assets
+          cp /tmp/pubspec_backup.yaml pubspec.yaml
+
+      - name: Fix build.gradle and AndroidManifest with Python
+        run: |
+          python3 - <<'EOF'
+          import re
+
+          # Fix build.gradle
+          path = 'android/app/build.gradle'
+          with open(path, 'r') as f:
+              content = f.read()
+          content = re.sub(r'minSdk\s+\d+', 'minSdk 21', content)
+          content = re.sub(r'minSdkVersion\s+\d+', 'minSdkVersion 21', content)
+          content = re.sub(r'compileSdk\s+\d+', 'compileSdk 34', content)
+          content = re.sub(r'targetSdk\s+\d+', 'targetSdk 34', content)
+          with open(path, 'w') as f:
+              f.write(content)
+          print("build.gradle patched")
+
+          # Fix AndroidManifest.xml
+          mpath = 'android/app/src/main/AndroidManifest.xml'
+          with open(mpath, 'r') as f:
+              manifest = f.read()
+          if 'xmlns:tools' not in manifest:
+              manifest = manifest.replace(
+                  '<manifest xmlns:android=',
+                  '<manifest xmlns:android= xmlns:tools="http://schemas.android.com/tools"'
+              )
+          if 'overrideLibrary' not in manifest:
+              manifest = manifest.replace(
+                  '</manifest>',
+                  '    <uses-sdk tools:overrideLibrary="io.flutter.plugins.camera"/>\n</manifest>'
+              )
+          with open(mpath, 'w') as f:
+              f.write(manifest)
+          print("AndroidManifest.xml patched")
+          EOF
+
+      - name: Fix tflite_flutter version
+        run: |
+          sed -i 's/tflite_flutter: \^0\.10\.0/tflite_flutter: ^0.10.4/g' pubspec.yaml
+
+      - name: Build APK
+        run: |
+          flutter pub get
+          flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mic_app_release
+          path: build/app/outputs/flutter-apk/app-release.apk
