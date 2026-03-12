@@ -35,31 +35,19 @@ jobs:
           cp -r /tmp/assets_backup assets
           cp /tmp/pubspec_backup.yaml pubspec.yaml
 
-      - name: Fix build.gradle with Python
+      - name: Fix Gradle minSdk
         run: |
-          python3 - <<'EOF'
-          import re
+          grep -n "minSdk" android/app/build.gradle
+          sed -i 's/minSdk [0-9]*/minSdk 21/' android/app/build.gradle
+          sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/' android/app/build.gradle
+          grep -n "minSdk" android/app/build.gradle
 
-          path = 'android/app/build.gradle'
-          with open(path, 'r') as f:
-              content = f.read()
-
-          content = re.sub(r'minSdk\s+\d+', 'minSdk 21', content)
-          content = re.sub(r'minSdkVersion\s+\d+', 'minSdkVersion 21', content)
-          content = re.sub(r'compileSdk\s+\d+', 'compileSdk 34', content)
-          content = re.sub(r'compileSdkVersion\s+\d+', 'compileSdkVersion 34', content)
-          content = re.sub(r'targetSdk\s+\d+', 'targetSdk 34', content)
-          content = re.sub(r'targetSdkVersion\s+\d+', 'targetSdkVersion 34', content)
-
-          with open(path, 'w') as f:
-              f.write(content)
-
-          print("build.gradle patched successfully")
-          EOF
-
-      - name: Fix tflite_flutter version
+      - name: Fix AndroidManifest overrideLibrary
         run: |
-          sed -i 's/tflite_flutter: \^0\.10\.0/tflite_flutter: ^0.10.4/g' pubspec.yaml
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          sed -i 's|<manifest xmlns:android="|<manifest xmlns:android=" xmlns:tools="http://schemas.android.com/tools"|' "$MANIFEST"
+          sed -i 's|</manifest>|    <uses-sdk tools:overrideLibrary="io.flutter.plugins.camera"/>\n</manifest>|' "$MANIFEST"
+          cat "$MANIFEST"
 
       - name: Build APK
         run: |
@@ -70,4 +58,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mic_app_release
-          path: build/app/outputs
+          path: build/app/outputs/flutter-apk/app-release.apk
