@@ -21,7 +21,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.0'
+          flutter-version: '3.24.0'
 
       - name: Regenerate Android folder
         run: |
@@ -47,7 +47,6 @@ jobs:
           android {
               namespace "com.mic.framework"
               compileSdk 34
-              ndkVersion flutter.ndkVersion
 
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_1_8
@@ -62,8 +61,8 @@ jobs:
                   applicationId "com.mic.framework"
                   minSdk 21
                   targetSdk 34
-                  versionCode flutter.versionCode
-                  versionName flutter.versionName
+                  versionCode 1
+                  versionName "1.0.0"
               }
 
               buildTypes {
