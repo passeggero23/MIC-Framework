@@ -1,4 +1,4 @@
-name: Flutter Build
+name:mic_app
 
 on:
   push:
