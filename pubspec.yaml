@@ -1,4 +1,4 @@
-name: mic_app
+yamlname: mic_app
 description: "A new Flutter project."
 publish_to: 'none'
 version: 1.0.0+1
@@ -10,9 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.6
-  # Queste sono le chiavi che mancano per togliere le X rosse:
   camera: ^0.10.5+5
-  tflite_flutter: ^0.10.0
+  tflite_flutter: ^0.12.1
   path_provider: ^2.1.2
 
 dev_dependencies:
@@ -22,6 +21,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # Qui diciamo a Flutter di guardare dentro la tua cartella assets
   assets:
     - assets/model.tflite
