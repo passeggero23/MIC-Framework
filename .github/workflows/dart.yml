@@ -1,40 +1,32 @@
-name:mic_app
-
+name: Flutter Build
 on:
   push:
     branches: [ "main" ]
-
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Backup lib and assets
         run: |
           cp -r lib /tmp/lib_backup
           cp -r assets /tmp/assets_backup
           cp pubspec.yaml /tmp/pubspec_backup.yaml
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
-
       - name: Regenerate Android folder
         run: |
           rm -rf android
           flutter create . --project-name mic_app --overwrite --platforms android
-
       - name: Restore original lib and assets
         run: |
           rm -rf lib assets
           cp -r /tmp/lib_backup lib
           cp -r /tmp/assets_backup assets
           cp /tmp/pubspec_backup.yaml pubspec.yaml
-
       - name: Write clean build.gradle
         run: |
           cat > android/app/build.gradle << 'EOF'
@@ -43,20 +35,16 @@ jobs:
               id "kotlin-android"
               id "dev.flutter.flutter-gradle-plugin"
           }
-
           android {
               namespace "com.mic.framework"
               compileSdk 35
-
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_1_8
                   targetCompatibility JavaVersion.VERSION_1_8
               }
-
               kotlinOptions {
                   jvmTarget = "1.8"
               }
-
               defaultConfig {
                   applicationId "com.mic.framework"
                   minSdk 21
@@ -64,19 +52,16 @@ jobs:
                   versionCode 1
                   versionName "1.0.0"
               }
-
               buildTypes {
                   release {
                       signingConfig signingConfigs.debug
                   }
               }
           }
-
           flutter {
               source "../.."
           }
           EOF
-
       - name: Write clean AndroidManifest.xml
         run: |
           cat > android/app/src/main/AndroidManifest.xml << 'EOF'
@@ -110,12 +95,10 @@ jobs:
               </application>
           </manifest>
           EOF
-
       - name: Build APK
         run: |
           flutter pub get
           flutter build apk --release
-
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
