@@ -40,18 +40,59 @@ jobs:
       - name: Create assets directory
         run: mkdir -p assets/models
 
-      - name: Insert flutterEmbedding meta-data in AndroidManifest.xml
+      - name: Replace entire AndroidManifest.xml with correct version
         run: |
-          # Prima aggiungiamo il meta-data flutterEmbedding=2
-          sed -i '/<application/a\        <meta-data\n            android:name="flutterEmbedding"\n            android:value="2" />' android/app/src/main/AndroidManifest.xml
+          cat > android/app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.example.mic_app">
+            
+            <uses-permission android:name="android.permission.CAMERA" />
+            <uses-permission android:name="android.permission.RECORD_AUDIO" />
+            <uses-permission android:name="android.permission.INTERNET" />
+            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
-      - name: Add camera and microphone permissions
-        run: |
-          # Aggiungi le permissions subito dopo l'apertura del manifest
-          sed -i '/<manifest/a\    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />' android/app/src/main/AndroidManifest.xml
+            <application
+                android:label="mic_app"
+                android:name="${applicationName}"
+                android:icon="@mipmap/ic_launcher"
+                android:allowBackup="false"
+                android:theme="@style/LaunchTheme">
+                
+                <meta-data
+                    android:name="flutterEmbedding"
+                    android:value="2" />
+                
+                <activity
+                    android:name=".MainActivity"
+                    android:exported="true"
+                    android:launchMode="singleTop"
+                    android:theme="@style/LaunchTheme"
+                    android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+                    android:hardwareAccelerated="true"
+                    android:windowSoftInputMode="adjustResize">
+                    <meta-data
+                        android:name="io.flutter.embedding.android.NormalTheme"
+                        android:resource="@style/NormalTheme" />
+                    <meta-data
+                        android:name="io.flutter.embedding.android.SplashScreenDrawable"
+                        android:resource="@drawable/launch_background" />
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
 
-          # Aggiungi queries per Android 11+
-          sed -i '/<\/application>/a\    <!-- For Android 11+ -->\n    <queries>\n        <intent>\n            <action android:name="android.media.action.IMAGE_CAPTURE" />\n        </intent>\n    </queries>' android/app/src/main/AndroidManifest.xml
+            <!-- For Android 11+ -->
+            <queries>
+                <intent>
+                    <action android:name="android.media.action.IMAGE_CAPTURE" />
+                </intent>
+            </queries>
+          </manifest>
+          EOF
 
       - name: Disable R8 in build.gradle
         run: |
