@@ -40,47 +40,18 @@ jobs:
       - name: Create assets directory
         run: mkdir -p assets/models
 
-      - name: Update AndroidManifest.xml with permissions
+      - name: Insert flutterEmbedding meta-data in AndroidManifest.xml
         run: |
-          cat > android/app/src/main/AndroidManifest.xml << 'EOF'
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-            <uses-permission android:name="android.permission.CAMERA" />
-            <uses-permission android:name="android.permission.RECORD_AUDIO" />
-            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-            <uses-permission android:name="android.permission.INTERNET" />
+          # Prima aggiungiamo il meta-data flutterEmbedding=2
+          sed -i '/<application/a\        <meta-data\n            android:name="flutterEmbedding"\n            android:value="2" />' android/app/src/main/AndroidManifest.xml
 
-            <application
-                android:label="mic_app"
-                android:name=".Application"
-                android:icon="@mipmap/ic_launcher">
-                <activity
-                    android:name=".MainActivity"
-                    android:exported="true"
-                    android:launchMode="singleTop"
-                    android:theme="@style/LaunchTheme"
-                    android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|density|uiMode"
-                    android:hardwareAccelerated="true"
-                    android:windowSoftInputMode="adjustResize">
-                    <meta-data
-                      android:name="io.flutter.embedding.android.NormalTheme"
-                      android:resource="@style/NormalTheme"
-                    />
-                    <intent-filter android:autoVerify="true">
-                        <action android:name="android.intent.action.MAIN"/>
-                        <category android:name="android.intent.category.LAUNCHER"/>
-                    </intent-filter>
-                </activity>
-            </application>
+      - name: Add camera and microphone permissions
+        run: |
+          # Aggiungi le permissions subito dopo l'apertura del manifest
+          sed -i '/<manifest/a\    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />' android/app/src/main/AndroidManifest.xml
 
-            <!-- For Android 11+ -->
-            <queries>
-                <intent>
-                    <action android:name="android.media.action.IMAGE_CAPTURE" />
-                </intent>
-            </queries>
-          </manifest>
-          EOF
+          # Aggiungi queries per Android 11+
+          sed -i '/<\/application>/a\    <!-- For Android 11+ -->\n    <queries>\n        <intent>\n            <action android:name="android.media.action.IMAGE_CAPTURE" />\n        </intent>\n    </queries>' android/app/src/main/AndroidManifest.xml
 
       - name: Disable R8 in build.gradle
         run: |
@@ -96,13 +67,22 @@ jobs:
       - name: Build APK Release
         run: flutter build apk --release --no-tree-shake-icons
 
-      - name: List APK files
-        run: find build -name "*.apk" 2>/dev/null | head -20
+      - name: Verify APK exists
+        run: |
+          echo "📦 Controllo APK generato..."
+          ls -la build/app/outputs/flutter-apk/
+          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+            echo "✅ APK trovato!"
+            du -h build/app/outputs/flutter-apk/app-release.apk
+          else
+            echo "❌ APK NON trovato!"
+            find build -name "*.apk" 2>/dev/null
+            exit 1
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: mic-app-release
-          path: build/app/outputs/flutter-apk/*.apk
-          if-no-files-found: warn
+          path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 7
