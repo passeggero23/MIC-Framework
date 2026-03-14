@@ -1,64 +1,57 @@
-import 'package:record/record.dart';
-import 'package:flutter/foundation.dart';
+name: Build MIC Framework
 
-class MicCore {
-  static final MicCore _instance = MicCore._internal();
-  factory MicCore() => _instance;
-  MicCore._internal();
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
-  String systemStatus = "Inizializzazione...";
-  bool isReady = false;
-  bool secureBoot = false;
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-  final AudioRecorder _recorder = AudioRecorder();
-  bool isRecording = false;
-  String audioResult = '⏳ In attesa...';
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  Future<void> boot() async {
-    try {
-      await Future.delayed(const Duration(milliseconds: 500));
-      systemStatus = "Sistema MIC: Attivo";
-      secureBoot = true;
-      isReady = true;
-      debugPrint('[MicCore] Boot completato');
-    } catch (e) {
-      systemStatus = "Errore durante il boot";
-      isReady = false;
-      debugPrint('[MicCore] Errore boot: $e');
-    }
-  }
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-  Future<void> startAudio() async {
-    try {
-      final hasPermission = await _recorder.hasPermission();
-      if (!hasPermission) {
-        audioResult = '⚠️ Permesso microfono negato';
-        return;
-      }
-      await _recorder.start(
-        const RecordConfig(encoder: AudioEncoder.pcm16bits),
-        path: '',
-      );
-      isRecording = true;
-      debugPrint('[MicCore] Microfono avviato');
-    } catch (e) {
-      audioResult = '❌ Errore microfono';
-      debugPrint('[MicCore] Errore audio: $e');
-    }
-  }
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
 
-  Future<void> stopAudio() async {
-    try {
-      await _recorder.stop();
-      isRecording = false;
-      audioResult = '✅ Audio registrato';
-    } catch (e) {
-      debugPrint('[MicCore] Errore stop audio: $e');
-    }
-  }
+      - name: Regenerate Android folder
+        run: flutter create --platforms=android --project-name mic_app .
 
-  void dispose() {
-    _recorder.dispose();
-    isRecording = false;
-  }
-}
+      - name: Restore lib/ and pubspec
+        run: |
+          git checkout -- lib/
+          git checkout -- pubspec.yaml
+
+      - name: Fix Gradle inline
+        run: |
+          sed -i 's/minSdkVersion [0-9]*/minSdkVersion 26/' android/app/build.gradle
+          sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 34/' android/app/build.gradle
+          sed -i 's/targetSdkVersion [0-9]*/targetSdkVersion 34/' android/app/build.gradle
+          sed -i 's/ext.kotlin_version = .*/ext.kotlin_version = "1.9.22"/' android/build.gradle
+
+      - name: Accept Android licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build APK Release
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
