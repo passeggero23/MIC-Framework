@@ -1,4 +1,4 @@
-name: Build MIC Framework
+name: Build mic_framework
 
 on:
   push:
