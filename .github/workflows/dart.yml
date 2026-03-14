@@ -1,6 +1,40 @@
+concurrency: name: Flutter Build
+on:
+  push:
+    branches: [ "main" ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Backup lib and assets
+        run: |
+          cp -r lib /tmp/lib_backup
+          cp -r assets /tmp/assets_backup
+          cp pubspec.yaml /tmp/pubspec_backup.yaml
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+
+      - name: Regenerate Android folder
+        run: |
+          rm -rf android
+          flutter create . --project-name mic_app --overwrite --platforms android
+
+      - name: Restore original lib and assets
+        run: |
+          rm -rf lib assets
+          cp -r /tmp/lib_backup lib
+          cp -r /tmp/assets_backup assets
+          cp /tmp/pubspec_backup.yaml pubspec.yaml
+
       - name: Write clean build.gradle
         run: |
-          cat > android/app/build.gradle << 'EOF'
+          cat > android/app/build.gradle << 'ENDOFFILE'
           plugins {
               id "com.android.application"
               id "kotlin-android"
@@ -32,4 +66,53 @@
           flutter {
               source "../.."
           }
-          EOF
+          ENDOFFILE
+
+      - name: Write clean AndroidManifest.xml
+        run: |
+          cat > android/app/src/main/AndroidManifest.xml << 'ENDOFFILE'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              package="com.mic.framework">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-sdk
+                  android:minSdkVersion="21"
+                  tools:overrideLibrary="io.flutter.plugins.camera"/>
+              <application
+                  android:label="mic_app"
+                  android:name="${applicationName}"
+                  android:icon="@mipmap/ic_launcher">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:launchMode="singleTop"
+                      android:taskAffinity=""
+                      android:theme="@style/LaunchTheme"
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+                      android:hardwareAccelerated="true"
+                      android:windowSoftInputMode="adjustResize">
+                      <meta-data
+                          android:name="io.flutter.embedding.android.NormalTheme"
+                          android:resource="@style/NormalTheme"/>
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+                  <meta-data
+                      android:name="flutterEmbedding"
+                      android:value="2"/>
+              </application>
+          </manifest>
+          ENDOFFILE
+
+      - name: Build APK
+        run: |
+          flutter pub get
+          flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mic_app_release
+          path: build/app/outputs/flutter-apk/app-release.apk
