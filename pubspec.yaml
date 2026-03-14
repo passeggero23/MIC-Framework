@@ -1,29 +1,17 @@
 name: mic_app
-description: MIC Framework - Flutter TFLite image/audio classification
-publish_to: 'none'
-
-version: 1.0.0+1
+description: "MIC Framework"
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
-  flutter: ">=3.19.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  tflite_flutter: ^0.10.4
-  record: ^4.4.4  # Versione chiave: evita errori R8 con sealed classes
-  camera: ^0.10.5+9
-  flutter_riverpod: ^2.4.9
-  path_provider: ^2.1.2
-  permission_handler: ^11.3.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^2.0.0
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/models/  # Cartella per i modelli TFLite (creala se non esiste)
