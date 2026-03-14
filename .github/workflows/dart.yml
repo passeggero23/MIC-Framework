@@ -1,9 +1,6 @@
 name: Build MIC Framework
 
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+on: [push, workflow_dispatch]
 
 jobs:
   build:
@@ -13,14 +10,12 @@ jobs:
       
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: '3.22.0'
           cache: true
           
       - run: flutter pub get
       
       - run: flutter build apk --release
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       
       - uses: actions/upload-artifact@v4
         with:
