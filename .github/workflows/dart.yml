@@ -34,12 +34,16 @@ jobs:
           git checkout -- lib/
           git checkout -- pubspec.yaml
 
-      - name: Fix Gradle inline
+      - name: Debug build.gradle
         run: |
-          sed -i 's/minSdkVersion [0-9]*/minSdkVersion 26/' android/app/build.gradle
-          sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 34/' android/app/build.gradle
-          sed -i 's/targetSdkVersion [0-9]*/targetSdkVersion 34/' android/app/build.gradle
-          sed -i 's/ext.kotlin_version = .*/ext.kotlin_version = "1.9.22"/' android/build.gradle
+          echo "=== app/build.gradle ==="
+          cat android/app/build.gradle || echo "NON ESISTE"
+          echo "=== app/build.gradle.kts ==="
+          cat android/app/build.gradle.kts || echo "KTS NON ESISTE"
+          echo "=== build.gradle root ==="
+          cat android/build.gradle || echo "NON ESISTE"
+          echo "=== build.gradle.kts root ==="
+          cat android/build.gradle.kts || echo "KTS NON ESISTE"
 
       - name: Fix AndroidManifest permissions
         run: |
@@ -64,4 +68,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          path: build/app/
+          path: build/app/outputs/flutter-apk/app-release.apk
