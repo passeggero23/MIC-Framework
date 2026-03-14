@@ -1,31 +1,27 @@
 name: Build MIC Framework
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
-on: 
+on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+      
+      - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
           
-      - name: Install Flutter dependencies
-        run: flutter pub get
-          
-      - name: Build release APK
-        run: flutter build apk --release
-          
+      - run: flutter pub get
+      
+      - run: flutter build apk --release
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      
       - uses: actions/upload-artifact@v4
         with:
           name: release-apk
