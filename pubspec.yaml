@@ -1,17 +1,20 @@
-name: mic_app
-description: A new Flutter project.
-publish_to: none
+name: mic_framework
+description: MIC Framework - Flutter TFLite image/audio classification
+publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.2.0 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6
-  camera: ^0.10.5+5
+  tflite_flutter: ^0.10.4
+  record: ^5.0.4
+  camera: ^0.10.5+9
+  flutter_riverpod: ^2.4.9
   path_provider: ^2.1.2
+  permission_handler: ^11.3.0
 
 dev_dependencies:
   flutter_test:
@@ -21,4 +24,56 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/model.tflite
+    - assets/models/
+.github/workflows/build.yml
+name: Build MIC Framework
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+
+      - name: Regenerate Android folder
+        run: |
+          flutter create --platforms=android .
+          
+      - name: Restore lib/
+        run: |
+          git checkout -- lib/
+
+      - name: Fix Gradle with Python
+        run: |
+          python3 scripts/fix_gradle.py
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build APK Release
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/o
