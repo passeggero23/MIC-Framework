@@ -1,6 +1,3 @@
-Run details
-Workflow file for this run
-.github/workflows/dart.yml at b477fc3
 name: Build MIC Framework
 
 on:
@@ -12,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -21,89 +19,53 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '17'  # Aggiornato da 11 a 17 (richiesto per Flutter 3.19+)
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.0'
           channel: 'stable'
+          cache: true  # Aggiunto caching per build più veloci
 
-      - name: Regenerate Android folder
-        run: flutter create --platforms=android --project-name mic_app .
+      - name: Validate Flutter installation
+        run: flutter doctor -v
 
-      - name: Restore lib/ and pubspec
+      - name: Regenerate Android project
         run: |
-          git checkout -- lib/
-          git checkout -- pubspec.yaml
-          mkdir -p assets/models
-      - name: Rewrite build.gradle (disable R8 via minifyEnabled)
+          if [ -d "android" ]; then
+            rm -rf android/
+          fi
+          flutter create --platforms=android --project-name mic_app .
+
+      - name: Restore project files
         run: |
-          python3 - <<'PYEOF'
-          content = """
-          plugins {
-              id "com.android.application"
-              id "kotlin-android"
-              id "dev.flutter.flutter-gradle-plugin"
-          }
-          android {
-              namespace "com.example.mic_app"
-              compileSdk 34
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_1_8
-                  targetCompatibility JavaVersion.VERSION_1_8
-              }
-              kotlinOptions {
-                  jvmTarget = '1.8'
-              }
-              defaultConfig {
-                  applicationId "com.example.mic_app"
-                  minSdk 26
-                  targetSdk 34
-                  versionCode 1
-                  versionName "1.0"
-              }
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.debug
-                      minifyEnabled false
-                      shrinkResources false
-                      proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-                  }
-              }
-              packagingOptions {
-                  pickFirst '**/libc++_shared.so'
-                  pickFirst '**/libjsc.so'
-              }
-          }
-          flutter {
-              source '../..'
-          }
-          """
-          with open("android/app/build.gradle", "w") as f:
-              f.write(content)
-          PYEOF
-      - name: Rewrite gradle.properties (removed deprecated R8)
+          git restore lib/ pubspec.yaml
+          mkdir -p assets/models || true
+
+      # Sezione ottimizzata per la configurazione Android
+      - name: Configure Android Build
+        working-directory: ./android
         run: |
-          cat > android/gradle.properties << 'EOF'
-          org.gradle.jvmargs=-Xmx1536M
-          android.useAndroidX=true
-          android.enableJetifier=true
-          EOF
-      - name: Create empty proguard-rules.pro
-        run: echo "" > android/app/proguard-rules.pro
+          # Gradle properties
+          echo -e "org.gradle.jvmargs=-Xmx4096M\nandroid.useAndroidX=true" > gradle.properties
+          
+          # Build.gradle modificato
+          awk '{gsub(/minifyEnabled true/, "minifyEnabled false")}1' app/build.gradle > tmp && mv tmp app/build.gradle
+          awk '{gsub(/shrinkResources true/, "shrinkResources false")}1' app/build.gradle > tmp && mv tmp app/build.gradle
+          touch app/proguard-rules.pro
 
-      - name: Accept Android licenses
-        run: yes | sdkmanager --licenses || true
+      - name: Flutter dependencies
+        run: |
+          flutter pub get
+          flutter clean
 
-      - name: Flutter pub get
-        run: flutter pub get
-
-      - name: Build APK Release
-        run: flutter build apk --release --no-tree-shake-icons
+      - name: Build APK (Release)
+        run: flutter build apk --release --no-tree-shake-icons --verbose
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
+          name: mic-app-release
           path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7
