@@ -1,6 +1,7 @@
 name: mic_app
 description: MIC Framework - Flutter TFLite image/audio classification
 publish_to: 'none'
+
 version: 1.0.0+1
 
 environment:
@@ -25,5 +26,3 @@ flutter:
   uses-material-design: true
   assets:
     - assets/models/
-E il workflow va aggiornato:
-run: flutter create --platforms=android --project-name mic_app .
