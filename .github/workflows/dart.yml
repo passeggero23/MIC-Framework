@@ -1,4 +1,5 @@
-name: Build MIC Framework
+defaults:
+  name: Build MIC Framework
 
 on:
   push:
@@ -35,7 +36,18 @@ jobs:
           git checkout -- pubspec.yaml
           mkdir -p assets/models
 
-      - name: Rewrite build.gradle (fix R8)
+      - name: Add SDK constraints (fix exit code 65)
+        run: |
+          python3 - <<'PYEOF'
+          import yaml
+          with open('pubspec.yaml', 'r') as f:
+            pubspec = yaml.safe_load(f)
+          pubspec['environment'] = {'sdk': '>=3.0.0 <4.0.0'}
+          with open('pubspec.yaml', 'w') as f:
+            yaml.dump(pubspec, f, default_flow_style=False, sort_keys=False)
+          PYEOF
+
+      - name: Rewrite build.gradle (disable R8 via minifyEnabled)
         run: |
           python3 - <<'PYEOF'
           content = """
@@ -82,7 +94,7 @@ jobs:
               f.write(content)
           PYEOF
 
-      - name: Rewrite gradle.properties (clean)
+      - name: Rewrite gradle.properties (removed deprecated R8)
         run: |
           cat > android/gradle.properties << 'EOF'
           org.gradle.jvmargs=-Xmx1536M
