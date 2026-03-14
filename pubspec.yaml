@@ -11,23 +11,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
-  # TensorFlow Lite
   tflite_flutter: ^0.10.4
-  
-  # Audio Recording (versione stabile senza sealed classes)
-  record: ^4.4.4
-  
-  # Camera
+  record: ^4.4.4  # Versione chiave: evita errori R8 con sealed classes
   camera: ^0.10.5+9
-  
-  # Riverpod per state management
   flutter_riverpod: ^2.4.9
-  
-  # File system
   path_provider: ^2.1.2
-  
-  # Permessi
   permission_handler: ^11.3.0
 
 dev_dependencies:
@@ -38,4 +26,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/models/
+    - assets/models/  # Cartella per i modelli TFLite (creala se non esiste)
