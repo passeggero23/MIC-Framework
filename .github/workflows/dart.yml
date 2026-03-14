@@ -1,4 +1,4 @@
-name: Build MIC Framework
+description: Build MIC Framework
 
 on:
   push:
@@ -33,7 +33,6 @@ jobs:
         run: |
           git checkout -- lib/
           git checkout -- pubspec.yaml
-          git checkout -- pubspec.lock
 
       - name: Fix Gradle inline
         run: |
