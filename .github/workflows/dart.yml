@@ -56,7 +56,7 @@ jobs:
               }
               defaultConfig {
                   applicationId "com.example.mic_app"
-                  minSdk 21
+                  minSdk 26  # FIX: tflite_flutter richiede minSdk 26
                   targetSdk 34
                   versionCode 1
                   versionName "1.0"
