@@ -1,121 +1,41 @@
-defaults:
-  name: Build MIC Framework
+name: mic_app
+description: MIC Framework - Flutter TFLite image/audio classification.
+publish_to: 'none'
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+version: 1.0.0+1
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.19.0 <4.0.0"
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # TensorFlow Lite
+  tflite_flutter: ^0.10.4
+  
+  # Audio Recording (versione stabile)
+  record: ^4.4.4
+  
+  # Camera per classificazione immagini
+  camera: ^0.10.5+9
+  
+  # State Management
+  flutter_riverpod: ^2.4.9
+  
+  # File System
+  path_provider: ^2.1.2
+  
+  # Permessi (audio/camera)
+  permission_handler: ^11.3.0
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '11'
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.19.0'
-          channel: 'stable'
-
-      - name: Regenerate Android folder
-        run: flutter create --platforms=android --project-name mic_app .
-
-      - name: Restore lib/ and pubspec
-        run: |
-          git checkout -- lib/
-          git checkout -- pubspec.yaml
-          mkdir -p assets/models
-
-      - name: Add SDK constraints (fix exit code 65)
-        run: |
-          python3 - <<'PYEOF'
-          import yaml
-          with open('pubspec.yaml', 'r') as f:
-            pubspec = yaml.safe_load(f)
-          pubspec['environment'] = {'sdk': '>=3.0.0 <4.0.0'}
-          with open('pubspec.yaml', 'w') as f:
-            yaml.dump(pubspec, f, default_flow_style=False, sort_keys=False)
-          PYEOF
-
-      - name: Rewrite build.gradle (disable R8 via minifyEnabled)
-        run: |
-          python3 - <<'PYEOF'
-          content = """
-          plugins {
-              id "com.android.application"
-              id "kotlin-android"
-              id "dev.flutter.flutter-gradle-plugin"
-          }
-          android {
-              namespace "com.example.mic_app"
-              compileSdk 34
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_1_8
-                  targetCompatibility JavaVersion.VERSION_1_8
-              }
-              kotlinOptions {
-                  jvmTarget = '1.8'
-              }
-              defaultConfig {
-                  applicationId "com.example.mic_app"
-                  minSdk 21
-                  targetSdk 34
-                  versionCode 1
-                  versionName "1.0"
-              }
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.debug
-                      minifyEnabled false
-                      shrinkResources false
-                      proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-                  }
-              }
-              packagingOptions {
-                  pickFirst '**/libc++_shared.so'
-                  pickFirst '**/libjsc.so'
-              }
-          }
-          flutter {
-              source '../..'
-          }
-          """
-          with open("android/app/build.gradle", "w") as f:
-              f.write(content)
-          PYEOF
-
-      - name: Rewrite gradle.properties (removed deprecated R8)
-        run: |
-          cat > android/gradle.properties << 'EOF'
-          org.gradle.jvmargs=-Xmx1536M
-          android.useAndroidX=true
-          android.enableJetifier=true
-          EOF
-
-      - name: Create empty proguard-rules.pro
-        run: echo "" > android/app/proguard-rules.pro
-
-      - name: Accept Android licenses
-        run: yes | sdkmanager --licenses || true
-
-      - name: Flutter pub get
-        run: flutter pub get
-
-      - name: Build APK Release
-        run: flutter build apk --release --no-tree-shake-icons
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/models/
