@@ -34,58 +34,17 @@ jobs:
       - name: Regenerate Android folder
         run: flutter create --platforms=android --project-name mic_app .
 
-      - name: Restore lib/ and pubspec
+      - name: Restore lib/, pubspec AND AndroidManifest
         run: |
           git checkout -- lib/
           git checkout -- pubspec.yaml
+          git checkout -- android/app/src/main/AndroidManifest.xml
           mkdir -p assets/models
 
-      - name: Rewrite build.gradle (disable R8 via minifyEnabled)
+      - name: Disable R8 in build.gradle
         run: |
-          python3 - <<'PYEOF'
-          content = """
-          plugins {
-              id "com.android.application"
-              id "kotlin-android"
-              id "dev.flutter.flutter-gradle-plugin"
-          }
-          android {
-              namespace "com.example.mic_app"
-              compileSdk 34
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_1_8
-                  targetCompatibility JavaVersion.VERSION_1_8
-              }
-              kotlinOptions {
-                  jvmTarget = '1.8'
-              }
-              defaultConfig {
-                  applicationId "com.example.mic_app"
-                  minSdk 26
-                  targetSdk 34
-                  versionCode 1
-                  versionName "1.0"
-              }
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.debug
-                      minifyEnabled false
-                      shrinkResources false
-                      proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-                  }
-              }
-              packagingOptions {
-                  pickFirst '**/libc++_shared.so'
-                  pickFirst '**/libjsc.so'
-              }
-          }
-          flutter {
-              source '../..'
-          }
-          """
-          with open("android/app/build.gradle", "w") as f:
-              f.write(content)
-          PYEOF
+          sed -i 's/minifyEnabled true/minifyEnabled false/g' android/app/build.gradle
+          sed -i 's/shrinkResources true/shrinkResources false/g' android/app/build.gradle
 
       - name: Rewrite gradle.properties
         run: |
