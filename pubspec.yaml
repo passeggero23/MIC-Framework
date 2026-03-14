@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   tflite_flutter: ^0.10.4
-  record: ^5.0.4
+  record: ^4.4.4  # Downgraded to fix sealed classes issue
   camera: ^0.10.5+9
   flutter_riverpod: ^2.4.9
   path_provider: ^2.1.2
