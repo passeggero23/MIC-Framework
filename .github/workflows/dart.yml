@@ -1,3 +1,5 @@
+name: Build MIC Framework
+
 on:
   push:
     branches: [ main ]
@@ -34,26 +36,23 @@ jobs:
 
       - name: Rewrite build.gradle
         run: |
-          cat > android/app/build.gradle << 'EOF'
+          python3 - <<'PYEOF'
+          content = """
           plugins {
               id "com.android.application"
               id "kotlin-android"
               id "dev.flutter.flutter-gradle-plugin"
           }
-
           android {
               namespace "com.example.mic_framework"
               compileSdk 34
-
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_1_8
                   targetCompatibility JavaVersion.VERSION_1_8
               }
-
               kotlinOptions {
                   jvmTarget = '1.8'
               }
-
               defaultConfig {
                   applicationId "com.example.mic_framework"
                   minSdk 26
@@ -61,18 +60,19 @@ jobs:
                   versionCode 1
                   versionName "1.0"
               }
-
               buildTypes {
                   release {
                       signingConfig signingConfigs.debug
                   }
               }
           }
-
           flutter {
               source '../..'
           }
-          EOF
+          """
+          with open("android/app/build.gradle", "w") as f:
+              f.write(content)
+          PYEOF
 
       - name: Accept Android licenses
         run: yes | sdkmanager --licenses || true
@@ -88,4 +88,3 @@ jobs:
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-```
