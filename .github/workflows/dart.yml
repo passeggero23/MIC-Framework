@@ -27,7 +27,7 @@ jobs:
           channel: 'stable'
 
       - name: Regenerate Android folder
-        run: flutter create --platforms=android .
+        run: flutter create --platforms=android --project-name mic_framework .
 
       - name: Restore lib/ and pubspec
         run: |
