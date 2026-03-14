@@ -1,28 +1,109 @@
-name: mic_app
-description: MIC Framework - Flutter TFLite image/audio classification
-publish_to: 'none'
+name: Build MIC Framework
 
-version: 1.0.0+1
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
-environment:
-  sdk: '>=3.0.0 <4.0.0'
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-dependencies:
-  flutter:
-    sdk: flutter
-  tflite_flutter: ^0.10.4
-  record: ^4.4.4  # Downgraded to fix sealed classes issue
-  camera: ^0.10.5+9
-  flutter_riverpod: ^2.4.9
-  path_provider: ^2.1.2
-  permission_handler: ^11.3.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^3.0.0
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'  # Changed to Java 11 for better compatibility
 
-flutter:
-  uses-material-design: true
-  assets:
-    - assets/models/
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+
+      - name: Regenerate Android folder
+        run: flutter create --platforms=android --project-name mic_app .
+
+      - name: Restore lib/ and pubspec
+        run: |
+          git checkout -- lib/
+          git checkout -- pubspec.yaml
+          mkdir -p assets/models
+
+      - name: Rewrite build.gradle
+        run: |
+          python3 - <<'PYEOF'
+          content = """
+          plugins {
+              id "com.android.application"
+              id "kotlin-android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+          android {
+              namespace "com.example.mic_app"
+              compileSdk 34
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+              kotlinOptions {
+                  jvmTarget = '1.8'
+              }
+              defaultConfig {
+                  applicationId "com.example.mic_app"
+                  minSdk 21  # Lowered to 21 for better compatibility
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.debug
+                      minifyEnabled false
+                      shrinkResources false
+                      useProguard false
+                  }
+              }
+              packagingOptions {
+                  pickFirst '**/libc++_shared.so'
+                  pickFirst '**/libjsc.so'
+              }
+          }
+          flutter {
+              source '../..'
+          }
+          """
+          with open("android/app/build.gradle", "w") as f:
+              f.write(content)
+          PYEOF
+
+      - name: Rewrite gradle.properties (disable R8/D8 optimizations)
+        run: |
+          cat > android/gradle.properties << 'EOF'
+          org.gradle.jvmargs=-Xmx1536M
+          android.useAndroidX=true
+          android.enableJetifier=true
+          android.enableR8.fullMode=false
+          android.enableR8=false
+          android.dexOptions.preDexLibraries=false
+          EOF
+
+      - name: Accept Android licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build APK Release (no tree-shake icons)
+        run: flutter build apk --release --no-tree-shake-icons
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
