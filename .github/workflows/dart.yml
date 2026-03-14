@@ -1,5 +1,5 @@
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Fix permanente per il warning
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 name: Build MIC Framework
 
@@ -22,14 +22,94 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'  # Versione consigliata per Flutter
+          java-version: '11'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.0'
           channel: 'stable'
-          cache: true  # Ottimizzazione build
+          cache: true
 
-      # ... (tutti gli altri step rimangono identici al tuo workflow attuale) ...
-      # Mantieni esattamente gli stessi step che già funzionano
+      - name: Regenerate Android folder
+        run: flutter create --platforms=android --project-name mic_app .
+
+      - name: Restore lib/ and pubspec
+        run: |
+          git checkout -- lib/
+          git checkout -- pubspec.yaml
+          mkdir -p assets/models
+
+      - name: Rewrite build.gradle (disable R8 via minifyEnabled)
+        run: |
+          python3 - <<'PYEOF'
+          content = """
+          plugins {
+              id "com.android.application"
+              id "kotlin-android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+          android {
+              namespace "com.example.mic_app"
+              compileSdk 34
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+              kotlinOptions {
+                  jvmTarget = '1.8'
+              }
+              defaultConfig {
+                  applicationId "com.example.mic_app"
+                  minSdk 26
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.debug
+                      minifyEnabled false
+                      shrinkResources false
+                      proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+                  }
+              }
+              packagingOptions {
+                  pickFirst '**/libc++_shared.so'
+                  pickFirst '**/libjsc.so'
+              }
+          }
+          flutter {
+              source '../..'
+          }
+          """
+          with open("android/app/build.gradle", "w") as f:
+              f.write(content)
+          PYEOF
+
+      - name: Rewrite gradle.properties
+        run: |
+          cat > android/gradle.properties << 'EOF'
+          org.gradle.jvmargs=-Xmx1536M
+          android.useAndroidX=true
+          android.enableJetifier=true
+          EOF
+
+      - name: Create empty proguard-rules.pro
+        run: echo "" > android/app/proguard-rules.pro
+
+      - name: Accept Android licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build APK Release
+        run: flutter build apk --release --no-tree-shake-icons
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mic-app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7
