@@ -27,7 +27,7 @@ jobs:
           channel: 'stable'
 
       - name: Regenerate Android folder
-        run: flutter create --platforms=android --project-name mic_framework .
+        run: flutter create --platforms=android --project-name mic_app .
 
       - name: Restore lib/ and pubspec
         run: |
@@ -45,7 +45,7 @@ jobs:
               id "dev.flutter.flutter-gradle-plugin"
           }
           android {
-              namespace "com.example.mic_framework"
+              namespace "com.example.mic_app"
               compileSdk 34
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_1_8
@@ -55,7 +55,7 @@ jobs:
                   jvmTarget = '1.8'
               }
               defaultConfig {
-                  applicationId "com.example.mic_framework"
+                  applicationId "com.example.mic_app"
                   minSdk 26
                   targetSdk 34
                   versionCode 1
