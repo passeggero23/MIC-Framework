@@ -31,18 +31,19 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Create complete Android folder structure
-        run: |
-          mkdir -p android/app/src/main/res/values
-          mkdir -p android/app/src/main/res/drawable
-          mkdir -p assets/models
+      - name: Delete old android folder if exists
+        run: rm -rf android/
 
-      - name: Create AndroidManifest.xml
+      - name: Regenerate Android project
+        run: flutter create --platforms=android --project-name mic_app .
+
+      - name: Create assets directory
+        run: mkdir -p assets/models
+
+      - name: Update AndroidManifest.xml with permissions
         run: |
           cat > android/app/src/main/AndroidManifest.xml << 'EOF'
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-            package="com.example.mic_app">
-
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <uses-permission android:name="android.permission.CAMERA" />
             <uses-permission android:name="android.permission.RECORD_AUDIO" />
             <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -50,124 +51,13 @@ jobs:
             <uses-permission android:name="android.permission.INTERNET" />
 
             <application
-                android:label="MIC App"
-                android:name="\${applicationName}"
+                android:label="mic_app"
+                android:name=".Application"
                 android:icon="@mipmap/ic_launcher">
                 <activity
                     android:name=".MainActivity"
                     android:exported="true"
                     android:launchMode="singleTop"
                     android:theme="@style/LaunchTheme"
-                    android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|density|uiMode"
-                    android:hardwareAccelerated="true"
-                    android:windowSoftInputMode="adjustResize">
-                    <meta-data
-                        android:name="io.flutter.embedding.android.NormalTheme"
-                        android:resource="@style/NormalTheme"
-                        />
-                    <intent-filter>
-                        <action android:name="android.intent.action.MAIN"/>
-                        <category android:name="android.intent.category.LAUNCHER"/>
-                    </intent-filter>
-                </activity>
-            </application>
-
-            <!-- Per Android 11+ -->
-            <queries>
-                <intent>
-                    <action android:name="android.media.action.IMAGE_CAPTURE" />
-                </intent>
-            </queries>
-          </manifest>
-          EOF
-
-      - name: Create strings.xml
-        run: |
-          cat > android/app/src/main/res/values/strings.xml << 'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <string name="app_name">MIC App</string>
-          </resources>
-          EOF
-
-      - name: Create build.gradle
-        run: |
-          cat > android/app/build.gradle << 'EOF'
-          plugins {
-              id "com.android.application"
-              id "kotlin-android"
-              id "dev.flutter.flutter-gradle-plugin"
-          }
-
-          android {
-              namespace "com.example.mic_app"
-              compileSdk 34
-              
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_1_8
-                  targetCompatibility JavaVersion.VERSION_1_8
-              }
-
-              kotlinOptions {
-                  jvmTarget = '1.8'
-              }
-
-              defaultConfig {
-                  applicationId "com.example.mic_app"
-                  minSdk 26
-                  targetSdk 34
-                  versionCode 1
-                  versionName "1.0"
-              }
-
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.debug
-                      minifyEnabled false
-                      shrinkResources false
-                      proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-                  }
-              }
-
-              packagingOptions {
-                  pickFirst '**/libc++_shared.so'
-                  pickFirst '**/libjsc.so'
-              }
-          }
-
-          flutter {
-              source '../..'
-          }
-          EOF
-
-      - name: Create gradle.properties
-        run: |
-          cat > android/gradle.properties << 'EOF'
-          org.gradle.jvmargs=-Xmx1536M
-          android.useAndroidX=true
-          android.enableJetifier=true
-          EOF
-
-      - name: Create proguard-rules.pro
-        run: echo "" > android/app/proguard-rules.pro
-
-      - name: Restore lib/ and pubspec.yaml
-        run: |
-          git checkout -- lib/
-          git checkout -- pubspec.yaml
-
-      - name: Accept Android licenses
-        run: yes | sdkmanager --licenses || true
-
-      - name: Flutter pub get
-        run: flutter pub get
-
-      - name: Build APK Release
-        run: flutter build apk --release --no-tree-shake-icons
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: mic-app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 7
+                    android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|density|uiMode"
+                    android:hard
