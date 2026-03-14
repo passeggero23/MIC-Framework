@@ -6,28 +6,28 @@ version: 1.0.0+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
-  flutter: ">=3.19.0"
+  flutter: ">=3.19.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
   
-  # TFLite Core
+  # TensorFlow Lite
   tflite_flutter: ^0.10.4
   
-  # Audio Recording (FIXED: ^4.4.4 evita sealed classes error)
+  # Audio Recording (versione stabile senza sealed classes)
   record: ^4.4.4
   
-  # Camera per image classification
+  # Camera
   camera: ^0.10.5+9
   
-  # State Management
+  # Riverpod per state management
   flutter_riverpod: ^2.4.9
   
-  # File System
+  # File system
   path_provider: ^2.1.2
   
-  # Permissions (audio/camera)
+  # Permessi
   permission_handler: ^11.3.0
 
 dev_dependencies:
