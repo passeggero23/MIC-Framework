@@ -40,6 +40,7 @@ class HomePage extends StatelessWidget {
             Text(
               '✅ Build Base Funzionante',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
             SizedBox(height: 10),
             Text(
               'Pronto per aggiungere AI',
