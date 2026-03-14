@@ -35,7 +35,7 @@ jobs:
           git checkout -- pubspec.yaml
           mkdir -p assets/models
 
-      - name: Rewrite build.gradle
+      - name: Rewrite build.gradle (fix R8)
         run: |
           python3 - <<'PYEOF'
           content = """
@@ -66,6 +66,7 @@ jobs:
                       signingConfig signingConfigs.debug
                       minifyEnabled false
                       shrinkResources false
+                      proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
                   }
               }
               packagingOptions {
@@ -81,14 +82,12 @@ jobs:
               f.write(content)
           PYEOF
 
-      - name: Rewrite gradle.properties
+      - name: Rewrite gradle.properties (clean)
         run: |
           cat > android/gradle.properties << 'EOF'
           org.gradle.jvmargs=-Xmx1536M
           android.useAndroidX=true
           android.enableJetifier=true
-          android.enableR8=false
-          android.dexOptions.preDexLibraries=false
           EOF
 
       - name: Create empty proguard-rules.pro
