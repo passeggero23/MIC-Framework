@@ -1,97 +1,28 @@
-name: Build MIC Framework
+name: mic_app
+description: MIC Framework - Flutter TFLite image/audio classification
+publish_to: 'none'
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+version: 1.0.0+1
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+environment:
+  sdk: '>=3.0.0 <4.0.0'
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+dependencies:
+  flutter:
+    sdk: flutter
+  tflite_flutter: ^0.10.4
+  record: ^4.4.4  # Downgraded to fix sealed classes issue
+  camera: ^0.10.5+9
+  flutter_riverpod: ^2.4.9
+  path_provider: ^2.1.2
+  permission_handler: ^11.3.0
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.19.0'
-          channel: 'stable'
-
-      - name: Regenerate Android folder
-        run: flutter create --platforms=android --project-name mic_app .
-
-      - name: Restore lib/ and pubspec
-        run: |
-          git checkout -- lib/
-          git checkout -- pubspec.yaml
-          mkdir -p assets/models
-
-      - name: Rewrite build.gradle
-        run: |
-          python3 - <<'PYEOF'
-          content = """
-          plugins {
-              id "com.android.application"
-              id "kotlin-android"
-              id "dev.flutter.flutter-gradle-plugin"
-          }
-          android {
-              namespace "com.example.mic_app"
-              compileSdk 34
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_1_8
-                  targetCompatibility JavaVersion.VERSION_1_8
-              }
-              kotlinOptions {
-                  jvmTarget = '1.8'
-              }
-              defaultConfig {
-                  applicationId "com.example.mic_app"
-                  minSdk 26
-                  targetSdk 34
-                  versionCode 1
-                  versionName "1.0"
-              }
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.debug
-                      minifyEnabled false
-                      shrinkResources false
-                      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-                  }
-              }
-          }
-          flutter {
-              source '../..'
-          }
-          """
-          with open("android/app/build.gradle", "w") as f:
-              f.write(content)
-          PYEOF
-
-      - name: Create empty proguard-rules.pro
-        run: echo "" > android/app/proguard-rules.pro
-
-      - name: Accept Android licenses
-        run: yes | sdkmanager --licenses || true
-
-      - name: Flutter pub get
-        run: flutter pub get
-
-      - name: Build APK Release
-        run: flutter build apk --release
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/models/
